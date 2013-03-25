@@ -18,8 +18,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use strict;
-use warnings;
 use File::Copy;
+use warnings;
 use Time::Piece;
 use Time::Seconds;
 use XML::Simple;
@@ -30,6 +30,7 @@ use Bio::SearchIO;
 use Bio::Seq;
 use Bio::SeqFeature::Generic;
 use FindBin;
+use POSIX;
 
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 # global variables
@@ -39,12 +40,11 @@ my $EXE = $FindBin::RealScript;
 my $VERSION = "1.5";
 my $AUTHOR = 'Torsten Seemann <torsten.seemann@monash.edu>';
 my $URL = 'http://www.vicbioinformatics.com';
-my $DBDIR = "/lustre/scratch108/pathogen/pathpipe/prokka/";
 my $HYPO = 'hypothetical protein';
 my $UNANN = 'unannotated protein';
-my $BLASTPCMD = "/software/pubseq/bin/ncbi-blast-2.2.25+/bin/blastp -query %i -db %d -evalue %e -num_threads 1 -out %o -num_descriptions 1 -num_alignments 1 2>/dev/null";
+my $BLASTPCMD = "blastp -query %i -db %d -evalue %e -num_threads 1 -out %o -num_descriptions 1 -num_alignments 1 2>/dev/null";
 my $HMMER3CMD = "hmmscan --noali --notextw --acc -E %e --cpu 1 -o %o %d %i 2>/dev/null";
-my $INFERNALCMD = "/software/pathogen/external/apps/usr/local/infernal-1.1rc1-linux-intel-gcc/binaries/cmscan --noali --notextw --acc -E %e --cpu 1 -o %o %d %i 2>/dev/null";
+my $INFERNALCMD = "cmscan --noali --notextw --acc -E %e --cpu 1 -o %o %d %i 2>/dev/null";
 my $starttime = localtime;
 my %seq;
 
@@ -53,8 +53,8 @@ my %seq;
 
 my(@Options, $quiet, $kingdom, $fast, $force, $outdir, $prefix, $cpus, $addgenes,
              $gcode, $gram, $gffver, $locustag, $increment, $mincontig, $evalue, $coverage,
-             $genus, $species, $strain, $usegenus, $proteins, $centre, $minimaps, $rfam,
-	     $listdb, $citation);
+             $genus, $species, $strain, $usegenus, $proteins, $centre, $minimaps, $rfam,$files_per_chunk,
+	     $listdb, $citation,$dbdir);
 setOptions();
 
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
@@ -133,7 +133,7 @@ for my $exe (qw(less grep egrep sed find tbl2asn makeblastdb blastp
   $fp ? msg("Need '$exe' - using $fp") : err("Can't find $exe in your \$PATH");
 }
 # Heikki discovered moreutils.deb contains a really old 'parallel' tool....
-my($pout) = qx(/software/pathogen/external/apps/usr/local/bin/parallel -V 2> /dev/null);
+my($pout) = qx(parallel -V 2> /dev/null);
 if ($pout !~ m/GNU/) {
   err("You don't have GNU 'parallel' installed, you have a different tool with that name.") 
 }
@@ -144,28 +144,28 @@ if ($pout !~ m/GNU/) {
 
 my %tools = (
   'aragorn' => {
-    GETVER  => "/software/pathogen/external/apps/usr/bin/aragorn -h 2>&1 | grep -i '^ARAGORN v'",
+    GETVER  => "aragorn -h 2>&1 | grep -i '^ARAGORN v'",
     REGEXP  => qr/([\d\.]+)/,
     VERSION => "1.2",
   },
   'rnammer' => {
-    GETVER  => "/software/pathogen/external/apps/usr/bin/rnammer -V 2>&1 | grep -i 'rnammer [0-9]'",
+    GETVER  => "rnammer -V 2>&1 | grep -i 'rnammer [0-9]'",
     REGEXP  => qr/([\d\.]+)/,
     VERSION => "1.2",
   },
   'prodigal' => {
-    GETVER  => "/software/pathogen/external/bin/prodigal -v 2>&1 | grep -i '^Prodigal V'",
+    GETVER  => "prodigal -v 2>&1 | grep -i '^Prodigal V'",
     REGEXP  => qr/([\d\.]+)/,
     VERSION => "2.6",
   },
   'signalp' => {
     # this is so long-winded as -v changed meaning (3.0=version, 4.0=verbose !?)
-    GETVER  => "perl /software/pathogen/external/apps/usr/bin/signalp -v < /dev/null 2>&1 | egrep ',|# SignalP' | sed 's/^# SignalP-//'",
+    GETVER  => "signalp -v < /dev/null 2>&1 | egrep ',|# SignalP' | sed 's/^# SignalP-//'",
     REGEXP  => qr/^(.*?)[,\s]/,
     VERSION => "4.0",
   },
   'infernal' => {
-    GETVER  => "/software/pathogen/external/apps/usr/local/infernal-1.1rc1-linux-intel-gcc/binaries/cmscan -h | grep '^# INFERNAL'",
+    GETVER  => "cmscan -h | grep '^# INFERNAL'",
     REGEXP  => qr/INFERNAL ([\d\.]+)/,
     VERSION => "1.0",
   },
@@ -330,7 +330,7 @@ else {
 # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 # ncRNA via Rfam + Infernal
 
-my $cmdb = "$DBDIR/cm/$kingdom";
+my $cmdb = "$dbdir/cm/$kingdom";
 if ($rfam and -r "$cmdb.i1m") {
   msg("Scanning for ncRNAs... please be patient.");
   my $num_ncrna = 0; # FIXME --cpu !!
@@ -534,7 +534,7 @@ if ($kingdom eq 'Bacteria' and $sigpver==3 || $sigpver==4) {
 # primary data source is a curated subset of uniprot (evidence <= 1 per Phylum)
 my @database = (
   {
-    DB  => "$DBDIR/kingdom/$kingdom/sprot",
+    DB  => "$dbdir/kingdom/$kingdom/sprot",
     SRC => 'similar to AA sequence:UniProtKB:',
     FMT => 'blast',
     CMD => $BLASTPCMD,
@@ -545,7 +545,7 @@ my @database = (
 unless ($kingdom eq 'Viruses') {
   for my $name (qw(CLUSTERS Cdd TIGRFAMs Pfam)) {
     push @database, {
-      DB  => "$DBDIR/hmm/$name.hmm",
+      DB  => "$dbdir/hmm/$name.hmm",
       SRC => "protein motif:$name:",
       FMT => 'hmmer3',
       CMD => $HMMER3CMD,
@@ -556,8 +556,8 @@ unless ($kingdom eq 'Viruses') {
 # if --usegenus is enabled 
 # AND user supplies a genus, and we have a custom file (from GenBank) do it first!
 if ($usegenus) {
-  if ($genus and -r "$DBDIR/genus/$genus.pin") {
-    my $blastdb = "$DBDIR/genus/$genus";
+  if ($genus and -r "$dbdir/genus/$genus.pin") {
+    my $blastdb = "$dbdir/genus/$genus";
     msg("Using custom $genus database for annotation");
     unshift @database, {
       DB  => $blastdb,
@@ -567,7 +567,7 @@ if ($usegenus) {
     };    
   }  
   else {
-    msg("Skipping genus-specific proteins as can't see $DBDIR/$genus");
+    msg("Skipping genus-specific proteins as can't see $dbdir/$genus");
   }
 }
 else {
@@ -590,68 +590,83 @@ if ($fast) {
   msg("Option --fast enabled, so skipping CDS similarity searches");
 }
 else {
-  msg("Annotating CDS, please be patient.");
+    msg("Annotating CDS, please be patient.");
 
-  my $paropts = $cpus > 0 ? " -j $cpus" : "";
-  msg("Will use", ($cpus > 0 ? $cpus : 'all available'), "CPUs for similarity searching.");
-
-  for my $db (@database) {
-    my %cds;
-    my $count=0;
-    for my $sid (sort keys %seq) {
-      for my $f (@{ $seq{$sid}{FEATURE} }) {
-	next unless $f->primary_tag eq 'CDS';
-	next if $f->has_tag('product');
-	$cds{++$count} = $f;
-	open my $fout, '>', "$outdir/$count.seq";
-	print $fout ">$count\n",$f->seq->translate->seq,"\n";
-	close $fout;
-      }
-    }
+    my $paropts = $cpus > 0 ? " -j $cpus" : "";
+    msg( "Will use", ( $cpus > 0 ? $cpus : 'all available' ), "CPUs for similarity searching." );
     
-    next if $count <= 0;
-    msg($db->{FMT}, "$count (of $num_cds) proteins against", $db->{DB});
+    my $num_cleaned = 0;
+    for my $db (@database) {
+        my %cds;
+        my $count = 0;
+        
+        my $cmd = $db->{CMD};
+        $cmd =~ s/%i/{}/g;
+        $cmd =~ s/%o/{}.out/g;
+        $cmd =~ s/%e/$evalue/g;
+        $cmd =~ s,%d,$db->{DB},g;
+        
+        for my $sid ( sort keys %seq ) {
+            for my $f ( @{ $seq{$sid}{FEATURE} } ) {
+                next unless $f->primary_tag eq 'CDS';
+                next if $f->has_tag('product');
+                $cds{ ++$count } = $f;
+            }
+        }
 
-    my $cmd = $db->{CMD};
-    $cmd =~ s/%i/{}/g;
-    $cmd =~ s/%o/{}.out/g;
-    $cmd =~ s/%e/$evalue/g;
-    $cmd =~ s,%d,$db->{DB},g;
+        next if $count <= 0;
+        msg( $db->{FMT}, "$count (of $num_cds) proteins against", $db->{DB} );
+        
+        
+        # Minimise the number of files created at a time. Tradeoff with efficiency of parallelisation. 
+        # This creates X input files per CPU. Another X are outputted per CPU.
+        my $slice_size = (($cpus > 0)? $cpus : 1) * (($files_per_chunk <=0) ? 10 : $files_per_chunk);
+        my @cds_counter = sort(keys %cds);
+        for(my $i = 0 ; $i < ceil((@cds_counter)/$slice_size);  $i++ )
+        {
+          for(my $j = $slice_size*$i; $j < @cds_counter && $j <  $slice_size*($i+1); $j++)
+          {
+            create_cds_sequences_in_file($outdir, $cds_counter[$j], $cds{$cds_counter[$j]});
+          }
+          
+          runcmd("nice parallel$paropts $cmd ::: $outdir/*.seq");
+          
+           for(my $j = $slice_size*$i; $j < @cds_counter && $j <  $slice_size*($i+1); $j++)
+            {
+              my $pid = $cds_counter[$j];
+              my $bls = Bio::SearchIO->new( -file => "$outdir/$pid.seq.out", -format => $db->{FMT} );
+               my $res = $bls->next_result or next;
+               my $hit = $res->next_hit    or next;
+               my ( $prod, $gene, $EC ) = ( $hit->description, '', '' );
+               if ( $prod =~ m/~~~/ ) {
+                   ( $EC, $gene, $prod ) = split m/~~~/, $prod;
+                   $EC =~ s/n\d+/-/g;    # collapse transitionary EC numbers
+               }
+               my $cleanprod = cleanup_product($prod);
+               if ( $cleanprod ne $prod ) {
+                   msg("Modify product: $prod => $cleanprod");
+                   if ( $cleanprod eq $HYPO ) {
+                       $cds{$pid}->add_tag_value( 'note', $prod );
+                       $cds{$pid}->remove_tag('gene')      if $cds{$pid}->has_tag('gene');
+                       $cds{$pid}->remove_tag('EC_number') if $cds{$pid}->has_tag('EC_number');
+                   }
+                   $num_cleaned++;
+               }
+               $cds{$pid}->add_tag_value( 'product',   $cleanprod );
+               $cds{$pid}->add_tag_value( 'EC_number', $EC ) if $EC;
+               $cds{$pid}->add_tag_value( 'gene',      $gene ) if $gene;
+               $cds{$pid}->add_tag_value( 'inference', $db->{SRC} . $hit->name );
+               unlink "$outdir/$pid.seq";
+               unlink "$outdir/$pid.seq.out";
+            }
+            unlink map { "$outdir/$_.seq" } keys %cds;
+            unlink map { "$outdir/$_.seq.out" } keys %cds;
+        }
 
-    #
-    # **** PARALLEL RUN! ****
-    #
-    runcmd("nice parallel$paropts $cmd ::: $outdir/*.seq"); 
-
-    my $num_cleaned=0;
-    for my $pid (keys %cds) {
-      my $bls = Bio::SearchIO->new(-file=>"$outdir/$pid.seq.out", -format=>$db->{FMT});
-      my $res = $bls->next_result or next;
-      my $hit = $res->next_hit or next;
-      my($prod,$gene,$EC) = ($hit->description, '', '');
-      if ($prod =~ m/~~~/) {
-	($EC,$gene,$prod) = split m/~~~/, $prod;
-	$EC =~ s/n\d+/-/g; # collapse transitionary EC numbers
-      }
-      my $cleanprod = cleanup_product($prod);      
-      if ($cleanprod ne $prod) {
-        msg("Modify product: $prod => $cleanprod");
-	if ($cleanprod eq $HYPO) {
-   	  $cds{$pid}->add_tag_value('note', $prod);
-  	  $cds{$pid}->remove_tag('gene') if $cds{$pid}->has_tag('gene');
-	  $cds{$pid}->remove_tag('EC_number') if $cds{$pid}->has_tag('EC_number');
-	}
-	$num_cleaned++;
-      }
-      $cds{$pid}->add_tag_value('product', $cleanprod);
-      $cds{$pid}->add_tag_value('EC_number', $EC) if $EC;
-      $cds{$pid}->add_tag_value('gene', $gene) if $gene;
-      $cds{$pid}->add_tag_value('inference', $db->{SRC}.$hit->name);
+        unlink map { "$outdir/$_.seq" } keys %cds;
+        unlink map { "$outdir/$_.seq.out" } keys %cds;
     }
     msg("Cleaned $num_cleaned /product names") if $num_cleaned > 0;
-    unlink map { "$outdir/$_.seq"     } keys %cds;
-    unlink map { "$outdir/$_.seq.out" } keys %cds;
-  }
 }
 
 if ($proteins) {
@@ -924,23 +939,23 @@ sub showdoc {
 #----------------------------------------------------------------------
 
 sub kingdoms {
-  return map { s{^.*/}{}; $_ } glob("$DBDIR/kingdom/*");
+  return map { s{^.*/}{}; $_ } glob("$dbdir/kingdom/*");
 }
 
 sub genera {
-  return map { s{^.*/}{}; s{.pin$}{}; $_ } glob("$DBDIR/genus/*.pin");
+  return map { s{^.*/}{}; s{.pin$}{}; $_ } glob("$dbdir/genus/*.pin");
 }
 
 sub hmms {
-  return map { s{^.*/}{}; s{.hmm.h3m$}{}; $_ } glob("$DBDIR/hmm/*.h3m");
+  return map { s{^.*/}{}; s{.hmm.h3m$}{}; $_ } glob("$dbdir/hmm/*.h3m");
 }
 
 sub cms {
-  return map { s{^.*/}{}; s{.i1m$}{}; $_ } glob("$DBDIR/cm/*.i1m");
+  return map { s{^.*/}{}; s{.i1m$}{}; $_ } glob("$dbdir/cm/*.i1m");
 }
 
 sub show_databases {
-  msg( "Databases: $DBDIR" );
+  msg( "Databases: $dbdir" );
   msg( "Kingdoms: ", kingdoms() );
   msg( "Genera:", genera() );
   msg( "HMMs:", hmms() );
@@ -980,6 +995,7 @@ sub setOptions {
     {OPT=>"quiet!",  VAR=>\$quiet, DEFAULT=>0, DESC=>"No screen output"},
     'Outputs:',
     {OPT=>"outdir=s",  VAR=>\$outdir, DEFAULT=>'', DESC=>"Output folder [auto]"},
+    {OPT=>"dbdir=s",  VAR=>\$dbdir, DEFAULT=>'/tmp/prokka', DESC=>"Database folder"},
     {OPT=>"force!",  VAR=>\$force, DEFAULT=>0, DESC=>"Force overwriting existing output folder"},
     {OPT=>"prefix=s",  VAR=>\$prefix, DEFAULT=>'', DESC=>"Filename output prefix [auto]"},
     {OPT=>"addgenes!",  VAR=>\$addgenes, DEFAULT=>0, DESC=>"Add 'gene' features for each 'CDS' feature"},
@@ -1005,6 +1021,7 @@ sub setOptions {
     {OPT=>"evalue=f",  VAR=>\$evalue, DEFAULT=>1E-6, DESC=>"Similarity e-value cut-off"},
 #    {OPT=>"coverage=f",  VAR=>\$coverage, DEFAULT=>0, DESC=>"Similarity \%id cut-off (otherwise /pseudo)"},
     {OPT=>"rfam",  VAR=>\$rfam, DEFAULT=>0, DESC=>"Enable searching for ncRNAs with Infernal+Rfam (SLOW!)"},
+    {OPT=>"files_per_chunk=i",  VAR=>\$files_per_chunk, DEFAULT=>10, DESC=>"Number of sequence files to chunk together for processing"},
   );
 
   (!@ARGV) && (usage());
@@ -1038,6 +1055,14 @@ sub usage {
     }      
   }
   exit(1);
+}
+
+sub create_cds_sequences_in_file
+{
+  my ($outdir, $count, $feature ) = @_;
+  open my $fout, '>', "$outdir/$count.seq";
+  print $fout ">$count\n", $feature->seq->translate->seq, "\n";
+  close $fout;
 }
 
 __DATA__
