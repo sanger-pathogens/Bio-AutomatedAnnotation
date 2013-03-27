@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 #    prokka - Bacterial annotation done fast and NCBI compliant (mostly).
+#    http://www.vicbioinformatics.com/software.prokka.shtml
 #
 #    Copyright (C) 2012 Torsten Seemann
 #
@@ -16,6 +17,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 use strict;
 use File::Copy;
@@ -53,7 +55,7 @@ my %seq;
 
 my(@Options, $quiet, $kingdom, $fast, $force, $outdir, $prefix, $cpus, $addgenes,
              $gcode, $gram, $gffver, $locustag, $increment, $mincontig, $evalue, $coverage,
-             $genus, $species, $strain, $usegenus, $proteins, $centre, $minimaps, $rfam,$files_per_chunk,
+             $genus, $species, $strain, $usegenus, $proteins, $centre, $minimaps, $rfam,$files_per_chunk, $contig_uniq_id,$tempdir,
 	     $listdb, $citation,$dbdir);
 setOptions();
 
@@ -207,7 +209,7 @@ while (my $seq = $fin->next_seq) {
   $ncontig++;
   # http://www.ncbi.nlm.nih.gov/genomes/static/Annotation_pipeline_README.txt
   my $id = sprintf "contig%06d", $ncontig;
-  $id = "gnl|$centre|$id" if $centre;
+  $id = "$contig_uniq_id|$centre|$id" if $centre;
   $seq->display_id($id);
   my $s = $seq->seq;
   $s = uc($s);
@@ -626,15 +628,15 @@ else {
         {
           for(my $j = $slice_size*$i; $j < @cds_counter && $j <  $slice_size*($i+1); $j++)
           {
-            create_cds_sequences_in_file($outdir, $cds_counter[$j], $cds{$cds_counter[$j]});
+            create_cds_sequences_in_file($tempdir, $cds_counter[$j], $cds{$cds_counter[$j]});
           }
           
-          runcmd("nice parallel$paropts $cmd ::: $outdir/*.seq");
+          runcmd("nice parallel$paropts $cmd ::: $tempdir/*.seq");
           
            for(my $j = $slice_size*$i; $j < @cds_counter && $j <  $slice_size*($i+1); $j++)
             {
               my $pid = $cds_counter[$j];
-              my $bls = Bio::SearchIO->new( -file => "$outdir/$pid.seq.out", -format => $db->{FMT} );
+              my $bls = Bio::SearchIO->new( -file => "$tempdir/$pid.seq.out", -format => $db->{FMT} );
                my $res = $bls->next_result or next;
                my $hit = $res->next_hit    or next;
                my ( $prod, $gene, $EC ) = ( $hit->description, '', '' );
@@ -656,15 +658,15 @@ else {
                $cds{$pid}->add_tag_value( 'EC_number', $EC ) if $EC;
                $cds{$pid}->add_tag_value( 'gene',      $gene ) if $gene;
                $cds{$pid}->add_tag_value( 'inference', $db->{SRC} . $hit->name );
-               unlink "$outdir/$pid.seq";
-               unlink "$outdir/$pid.seq.out";
+               unlink "$tempdir/$pid.seq";
+               unlink "$tempdir/$pid.seq.out";
             }
-            unlink map { "$outdir/$_.seq" } keys %cds;
-            unlink map { "$outdir/$_.seq.out" } keys %cds;
+            unlink map { "$tempdir/$_.seq" } keys %cds;
+            unlink map { "$tempdir/$_.seq.out" } keys %cds;
         }
 
-        unlink map { "$outdir/$_.seq" } keys %cds;
-        unlink map { "$outdir/$_.seq.out" } keys %cds;
+        unlink map { "$tempdir/$_.seq" } keys %cds;
+        unlink map { "$tempdir/$_.seq.out" } keys %cds;
     }
     msg("Cleaned $num_cleaned /product names") if $num_cleaned > 0;
 }
@@ -805,9 +807,9 @@ for my $sid (sort keys %seq) {
     unless ($addgenes and $f->primary_tag eq 'gene') {
       $ffn_fh->write_seq($p);      
     }
-#    if ($f->primary_tag eq 'CDS') {
-#      $faa_fh->write_seq( $p->translate(-codontable_id=>$gcode) ); 
-#    }
+    if ($f->primary_tag eq 'CDS') {
+      $faa_fh->write_seq( $p->translate(-codontable_id=>$gcode) ); 
+    }
   }
 }
 
@@ -1008,6 +1010,7 @@ sub setOptions {
     {OPT=>"genus=s",  VAR=>\$genus, DEFAULT=>'Genus', DESC=>"Genus name (will be used to aid annotation)"},
     {OPT=>"species=s",  VAR=>\$species, DEFAULT=>'species', DESC=>"Species name"},
     {OPT=>"strain=s",  VAR=>\$strain, DEFAULT=>'strain', DESC=>"Strain name"},    
+    {OPT=>"contig_uniq_id=s",  VAR=>\$contig_uniq_id, DEFAULT=>'gnl', DESC=>"Unique identifier"},    
     'Annotations:',
     {OPT=>"kingdom=s",  VAR=>\$kingdom, DEFAULT=>'Bacteria', DESC=>"Annotation mode: ".join('|', kingdoms()) },
     {OPT=>"gcode=i",  VAR=>\$gcode, DEFAULT=>0, DESC=>"Genetic code / Translation table (set if --kingdom is set)"},
@@ -1022,6 +1025,8 @@ sub setOptions {
 #    {OPT=>"coverage=f",  VAR=>\$coverage, DEFAULT=>0, DESC=>"Similarity \%id cut-off (otherwise /pseudo)"},
     {OPT=>"rfam",  VAR=>\$rfam, DEFAULT=>0, DESC=>"Enable searching for ncRNAs with Infernal+Rfam (SLOW!)"},
     {OPT=>"files_per_chunk=i",  VAR=>\$files_per_chunk, DEFAULT=>10, DESC=>"Number of sequence files to chunk together for processing"},
+    # Minimise load on networked file systems by doing intermeditate processing on the local storage
+    {OPT=>"tempdir=s",  VAR=>\$tempdir, DEFAULT=>'/tmp', DESC=>"Temp directory for intermediate results to be written to"},
   );
 
   (!@ARGV) && (usage());
