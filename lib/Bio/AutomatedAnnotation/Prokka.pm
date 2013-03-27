@@ -69,7 +69,7 @@ has 'proteins'        => ( is => 'ro', isa => 'Str',  default => '' );
 has 'fast'            => ( is => 'ro', isa => 'Bool', default => 0 );
 has 'cpus'            => ( is => 'ro', isa => 'Int',  default => 0 );
 has 'mincontig'       => ( is => 'ro', isa => 'Int',  default => 200 );
-has 'evalue'          => ( is => 'ro', isa => 'Num',  default => 1E-6 );
+has 'evalue'          => ( is => 'ro', isa => 'Num',  default =>   );
 has 'rfam'            => ( is => 'ro', isa => 'Bool', default => 0 );
 has 'files_per_chunk' => ( is => 'ro', isa => 'Int',  default => 10 );
 has 'tempdir'         => ( is => 'ro', isa => 'Str',  default => '/tmp' );
@@ -92,7 +92,7 @@ has 'infernalcmd' =>
   ( is => 'ro', isa => 'Str', default => "cmscan --noali --notextw --acc -E %e --cpu 1 -o %o %d %i 2>/dev/null" );
 has 'starttime' => (
     is      => 'ro',
-    isa     => 'Str',
+    isa     => 'Time::Piece',
     lazy => 1,
     builder => '_build_starttime'
 );
@@ -100,7 +100,7 @@ has 'starttime' => (
 sub _build_starttime 
 {
   my ($self) = @_;
-  return localtime()."";
+  return localtime;
 }
 
 sub _build_locustag {
