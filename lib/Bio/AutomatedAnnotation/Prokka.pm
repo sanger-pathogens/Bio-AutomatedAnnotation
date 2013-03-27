@@ -1,4 +1,4 @@
-package Bio::AutomatedAnnotation;
+package Bio::AutomatedAnnotation::Prokka;
 
 # ABSTRACT: Prokka class for bacterial annotation
 
@@ -12,15 +12,6 @@ package Bio::AutomatedAnnotation;
         Seemann T (2012)
         Prokka: Prokaryotic Genome Annotation System
         http://vicbioinformatics.com/
-
-  perl prokka --tempdir /tmp --prefix <lane_id> --locustag <> --centre SC --outdir annotation --dbdir /lustre/scratch108/pathogen/pathpipe/prokka --force --contig_uniq_id <ACCESSION> contigs.fa
-
-
-  wrapper should create annotation in a subdirectory of the assembly and clean up any files not needed.
-  Should lookup the accession numbers too
-  name it as the lane and accession nubmer
-
-
 
 =cut
 
@@ -54,7 +45,9 @@ use Bio::SeqFeature::Generic;
 use FindBin;
 use POSIX;
 
-has 'quiet'           => ( is => 'ro', isa => 'Bool', default => 0 );
+has 'assembly_file'   => ( is => 'ro', isa => 'Str',  required => 1 );
+
+has 'quiet'           => ( is => 'rw', isa => 'Bool', default => 1 );
 has 'outdir'          => ( is => 'ro', isa => 'Str',  default => '' );
 has 'dbdir'           => ( is => 'ro', isa => 'Str',  default => '/tmp/prokka' );
 has 'force'           => ( is => 'ro', isa => 'Bool', default => 0 );
@@ -100,10 +93,15 @@ has 'infernalcmd' =>
 has 'starttime' => (
     is      => 'ro',
     isa     => 'Str',
-    default => {
-        sub { localtime }
-    }
+    lazy => 1,
+    builder => '_build_starttime'
 );
+
+sub _build_starttime 
+{
+  my ($self) = @_;
+  return localtime()."";
+}
 
 sub _build_locustag {
     my ($self) = @_;
@@ -149,6 +147,7 @@ sub annotate {
     my $tempdir         = $self->tempdir;
     my $usegenus        = $self->usegenus;
 
+    my %seq;
     # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     # welcome message
 
@@ -216,8 +215,6 @@ sub annotate {
     my $logfile = "$outdir/$prefix.log";
     $self->msg("Writing log to: $logfile");
     open LOG, '>', $logfile or $self->err("Can't open logfile");
-
-    $self->msg("Command: @CMDLINE");
 
     # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     # check dependencies
@@ -294,7 +291,7 @@ sub annotate {
     # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     # read in sequences; remove small contigs; replace ambig with N
 
-    my $in = shift @ARGV or $self->err("Please supply a contig fasta file on the command line.");
+    my $in =$self->assembly_file;
     $self->msg("Loading and checking input file: $in");
     my $fin = Bio::SeqIO->new( -file => $in, -format => 'fasta' );
     my $fout = Bio::SeqIO->new( -file => ">$outdir/$prefix.fna", -format => 'fasta' );
@@ -969,8 +966,8 @@ sub annotate {
 
 sub cleanup_product {
     my ( $self, $p ) = @_;
-    return $HYPO if $p =~ m/DUF\d|UPF\d|conserved|domain of unknown|[CN].term|homolog|paralog/i;
-    return $HYPO if $p !~ m/[a-z]/;
+    return $self->hypo if $p =~ m/DUF\d|UPF\d|conserved|domain of unknown|[CN].term|homolog|paralog/i;
+    return $self->hypo if $p !~ m/[a-z]/;
 
     $p =~ s/\((EC|COG).*?\)//;
     $p =~ s/\s*\w+\d{4,}//;    # remove possible locus tags
@@ -1003,12 +1000,12 @@ sub msg {
     my $t    = localtime;
     my $line = "[" . $t->hms . "] @message\n";
     print LOG $line if openhandle( \*LOG );
-    print STDERR $line unless $quiet;
+    print STDERR $line unless $self->quiet;
 }
 
 sub err {
     my ( $self, @message ) = @_;
-    $quiet = 0;
+    $self->quiet(0);
     $self->msg(@message);
     exit(2);
 }
@@ -1033,10 +1030,6 @@ sub create_cds_sequences_in_file {
     print $fout ">$count\n", $feature->seq->translate->seq, "\n";
     close $fout;
 }
-
-__DATA__
-
-
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
