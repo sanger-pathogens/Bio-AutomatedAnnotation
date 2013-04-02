@@ -1,5 +1,4 @@
 package Bio::AutomatedAnnotation;
-
 # ABSTRACT: Automated annotation of assemblies
 
 =head1 SYNOPSIS
@@ -31,6 +30,7 @@ has 'annotation_tool'   => ( is => 'ro', isa => 'Str', default  => 'Prokka' );
 has 'outdir'            => ( is => 'ro', isa => 'Str', default  => 'annotation' );
 has 'tmp_directory'     => ( is => 'ro', isa => 'Str', default  => '/tmp' );
 has 'sequencing_centre' => ( is => 'ro', isa => 'Str', default  => 'SC' );
+has 'genus'             => ( is => 'ro', isa => 'Maybe[Str]' );
 has 'accession_number'  => ( is => 'ro', isa => 'Maybe[Str]' );
 
 has '_annotation_pipeline_class' =>
@@ -72,6 +72,13 @@ sub annotate {
         force          => 1,
         contig_uniq_id => $self->_contig_uniq_id
     );
+    
+    if(defined($self->genus))
+    {
+      $annotation_pipeline->genus($self->genus);
+      $annotation_pipeline->usegenus(1);
+    }
+    
     $annotation_pipeline->annotate;
     
     chdir($original_cwd);
