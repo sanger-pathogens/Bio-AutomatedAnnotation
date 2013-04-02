@@ -71,7 +71,7 @@ has 'cpus'            => ( is => 'ro', isa => 'Int',  default => 0 );
 has 'mincontig'       => ( is => 'ro', isa => 'Int',  default => 200 );
 has 'evalue'          => ( is => 'ro', isa => 'Num',  default => 1E-6 );
 has 'rfam'            => ( is => 'ro', isa => 'Bool', default => 0 );
-has 'files_per_chunk' => ( is => 'ro', isa => 'Int',  default => 10 );
+has 'files_per_chunk' => ( is => 'ro', isa => 'Int',  default => 100 );
 has 'tempdir'         => ( is => 'ro', isa => 'Str',  default => '/tmp' );
 
 has 'exe'     => ( is => 'ro', isa => 'Str', default => 'PROKKA' );
