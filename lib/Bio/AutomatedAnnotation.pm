@@ -1,4 +1,5 @@
 package Bio::AutomatedAnnotation;
+
 # ABSTRACT: Automated annotation of assemblies
 
 =head1 SYNOPSIS
@@ -35,6 +36,18 @@ has 'accession_number'  => ( is => 'ro', isa => 'Maybe[Str]' );
 
 has '_annotation_pipeline_class' =>
   ( is => 'ro', isa => 'Str', lazy => 1, builder => '_build__annotation_pipeline_class' );
+has '_temp_directory_obj'  => ( is => 'ro', isa => 'Str', lazy => 1, builder => '_build__temp_directory_obj' );
+has '_temp_directory_name' => ( is => 'ro', isa => 'Str', lazy => 1, builder => '_build__temp_directory_name' );
+
+sub _build__temp_directory_obj {
+    my ($self) = @_;
+    return File::Temp->newdir( DIR => $self->tmp_directory, CLEANUP => 1 );
+}
+
+sub _build__temp_directory_name {
+    my ($self) = @_;
+    return $self->_temp_directory_obj->dirname();
+}
 
 sub _contig_uniq_id {
     my ($self) = @_;
@@ -55,15 +68,15 @@ sub _build__annotation_pipeline_class {
 
 sub annotate {
     my ($self) = @_;
-    
+
     # Run the annotation in the directory containing the assembly
     my $original_cwd = getcwd();
     my ( $filename, $directories, $suffix ) = fileparse( $self->assembly_file );
-    chdir( $directories );
+    chdir($directories);
 
     my $annotation_pipeline = $self->_annotation_pipeline_class->new(
         assembly_file  => $self->assembly_file,
-        tempdir        => $self->tmp_directory,
+        tempdir        => $self->_temp_directory_name,
         centre         => $self->sequencing_centre,
         dbdir          => $self->dbdir,
         prefix         => $self->sample_name,
@@ -72,15 +85,14 @@ sub annotate {
         force          => 1,
         contig_uniq_id => $self->_contig_uniq_id
     );
-    
-    if(defined($self->genus))
-    {
-      $annotation_pipeline->genus($self->genus);
-      $annotation_pipeline->usegenus(1);
+
+    if ( defined( $self->genus ) ) {
+        $annotation_pipeline->genus( $self->genus );
+        $annotation_pipeline->usegenus(1);
     }
-    
+
     $annotation_pipeline->annotate;
-    
+
     chdir($original_cwd);
     return $self;
 }
