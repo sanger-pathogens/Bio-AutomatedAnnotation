@@ -22,6 +22,7 @@ Automated annotation of assemblies.
 use Moose;
 use File::Basename;
 use Cwd;
+use File::Temp;
 use Bio::AutomatedAnnotation::Prokka;
 
 has 'sample_name'       => ( is => 'ro', isa => 'Str', required => 1 );
@@ -36,7 +37,7 @@ has 'accession_number'  => ( is => 'ro', isa => 'Maybe[Str]' );
 
 has '_annotation_pipeline_class' =>
   ( is => 'ro', isa => 'Str', lazy => 1, builder => '_build__annotation_pipeline_class' );
-has '_temp_directory_obj'  => ( is => 'ro', isa => 'Str', lazy => 1, builder => '_build__temp_directory_obj' );
+has '_temp_directory_obj'  => ( is => 'ro', isa => 'File::Temp::Dir', lazy => 1, builder => '_build__temp_directory_obj' );
 has '_temp_directory_name' => ( is => 'ro', isa => 'Str', lazy => 1, builder => '_build__temp_directory_name' );
 
 sub _build__temp_directory_obj {
