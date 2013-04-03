@@ -45,7 +45,7 @@ use Bio::SeqFeature::Generic;
 use FindBin;
 use POSIX;
 
-has 'assembly_file'   => ( is => 'ro', isa => 'Str',  required => 1 );
+has 'assembly_file' => ( is => 'ro', isa => 'Str', required => 1 );
 
 has 'quiet'           => ( is => 'rw', isa => 'Bool', default => 1 );
 has 'outdir'          => ( is => 'ro', isa => 'Str',  default => '' );
@@ -93,14 +93,13 @@ has 'infernalcmd' =>
 has 'starttime' => (
     is      => 'ro',
     isa     => 'Time::Piece',
-    lazy => 1,
+    lazy    => 1,
     builder => '_build_starttime'
 );
 
-sub _build_starttime 
-{
-  my ($self) = @_;
-  return localtime;
+sub _build_starttime {
+    my ($self) = @_;
+    return localtime;
 }
 
 sub _build_locustag {
@@ -148,6 +147,7 @@ sub annotate {
     my $usegenus        = $self->usegenus;
 
     my %seq;
+
     # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     # welcome message
 
@@ -291,7 +291,7 @@ sub annotate {
     # . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     # read in sequences; remove small contigs; replace ambig with N
 
-    my $in =$self->assembly_file;
+    my $in = $self->assembly_file;
     $self->msg("Loading and checking input file: $in");
     my $fin = Bio::SeqIO->new( -file => $in, -format => 'fasta' );
     my $fout = Bio::SeqIO->new( -file => ">$outdir/$prefix.fna", -format => 'fasta' );
@@ -714,35 +714,35 @@ sub annotate {
         $self->msg( "Will use", ( $cpus > 0 ? $cpus : 'all available' ), "CPUs for similarity searching." );
 
         my $num_cleaned = 0;
-        for my $db (@database) {
-            my %cds;
-            my $count = 0;
+        my %cds;
+        my $count = 0;
 
-            my $cmd = $db->{CMD};
-            $cmd =~ s/%i/{}/g;
-            $cmd =~ s/%o/{}.out/g;
-            $cmd =~ s/%e/$evalue/g;
-            $cmd =~ s,%d,$db->{DB},g;
+        for my $sid ( sort keys %seq ) {
+            for my $f ( @{ $seq{$sid}{FEATURE} } ) {
+                next unless $f->primary_tag eq 'CDS';
+                next if $f->has_tag('product');
+                $cds{ ++$count } = $f;
+            }
+        }
 
-            for my $sid ( sort keys %seq ) {
-                for my $f ( @{ $seq{$sid}{FEATURE} } ) {
-                    next unless $f->primary_tag eq 'CDS';
-                    next if $f->has_tag('product');
-                    $cds{ ++$count } = $f;
-                }
+        continue if $count <= 0;
+
+        # Minimise the number of files created at a time. Tradeoff with efficiency of parallelisation.
+        # This creates X input files per CPU. Another X are outputted per CPU.
+        my $slice_size = ( ( $cpus > 0 ) ? $cpus : 1 ) * ( ( $files_per_chunk <= 0 ) ? 10 : $files_per_chunk );
+        my @cds_counter = sort( keys %cds );
+        for ( my $i = 0 ; $i < ceil( (@cds_counter) / $slice_size ) ; $i++ ) {
+            for ( my $j = $slice_size * $i ; $j < @cds_counter && $j < $slice_size * ( $i + 1 ) ; $j++ ) {
+                $self->create_cds_sequences_in_file( $tempdir, $cds_counter[$j], $cds{ $cds_counter[$j] } );
             }
 
-            next if $count <= 0;
-            $self->msg( $db->{FMT}, "$count (of $num_cds) proteins against", $db->{DB} );
-
-            # Minimise the number of files created at a time. Tradeoff with efficiency of parallelisation.
-            # This creates X input files per CPU. Another X are outputted per CPU.
-            my $slice_size = ( ( $cpus > 0 ) ? $cpus : 1 ) * ( ( $files_per_chunk <= 0 ) ? 10 : $files_per_chunk );
-            my @cds_counter = sort( keys %cds );
-            for ( my $i = 0 ; $i < ceil( (@cds_counter) / $slice_size ) ; $i++ ) {
-                for ( my $j = $slice_size * $i ; $j < @cds_counter && $j < $slice_size * ( $i + 1 ) ; $j++ ) {
-                    $self->create_cds_sequences_in_file( $tempdir, $cds_counter[$j], $cds{ $cds_counter[$j] } );
-                }
+            for my $db (@database) {
+                my $cmd = $db->{CMD};
+                $cmd =~ s/%i/{}/g;
+                $cmd =~ s/%o/{}.out/g;
+                $cmd =~ s/%e/$evalue/g;
+                $cmd =~ s,%d,$db->{DB},g;
+                $self->msg( $db->{FMT}, "$count (of $num_cds) proteins against", $db->{DB} );
 
                 $self->runcmd("nice parallel$paropts $cmd ::: $tempdir/*.seq");
 
@@ -770,16 +770,17 @@ sub annotate {
                     $cds{$pid}->add_tag_value( 'EC_number', $EC ) if $EC;
                     $cds{$pid}->add_tag_value( 'gene',      $gene ) if $gene;
                     $cds{$pid}->add_tag_value( 'inference', $db->{SRC} . $hit->name );
-                    unlink "$tempdir/$pid.seq";
+
                     unlink "$tempdir/$pid.seq.out";
                 }
-                unlink map { "$tempdir/$_.seq" } keys %cds;
-                unlink map { "$tempdir/$_.seq.out" } keys %cds;
             }
-
             unlink map { "$tempdir/$_.seq" } keys %cds;
             unlink map { "$tempdir/$_.seq.out" } keys %cds;
         }
+
+        unlink map { "$tempdir/$_.seq" } keys %cds;
+        unlink map { "$tempdir/$_.seq.out" } keys %cds;
+
         $self->msg("Cleaned $num_cleaned /product names") if $num_cleaned > 0;
     }
 
