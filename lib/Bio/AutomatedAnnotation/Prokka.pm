@@ -725,63 +725,64 @@ sub annotate {
             }
         }
 
-        continue if $count <= 0;
+        if ( $count > 0 ) {
 
-        # Minimise the number of files created at a time. Tradeoff with efficiency of parallelisation.
-        # This creates X input files per CPU. Another X are outputted per CPU.
-        my $slice_size = ( ( $cpus > 0 ) ? $cpus : 1 ) * ( ( $files_per_chunk <= 0 ) ? 10 : $files_per_chunk );
-        my @cds_counter = sort( keys %cds );
-        for ( my $i = 0 ; $i < ceil( (@cds_counter) / $slice_size ) ; $i++ ) {
-            for ( my $j = $slice_size * $i ; $j < @cds_counter && $j < $slice_size * ( $i + 1 ) ; $j++ ) {
-                $self->create_cds_sequences_in_file( $tempdir, $cds_counter[$j], $cds{ $cds_counter[$j] } );
-            }
-
-            for my $db (@database) {
-                my $cmd = $db->{CMD};
-                $cmd =~ s/%i/{}/g;
-                $cmd =~ s/%o/{}.out/g;
-                $cmd =~ s/%e/$evalue/g;
-                $cmd =~ s,%d,$db->{DB},g;
-                $self->msg( $db->{FMT}, "$count (of $num_cds) proteins against", $db->{DB} );
-
-                $self->runcmd("nice parallel$paropts $cmd ::: $tempdir/*.seq");
-
+            # Minimise the number of files created at a time. Tradeoff with efficiency of parallelisation.
+            # This creates X input files per CPU. Another X are outputted per CPU.
+            my $slice_size = ( ( $cpus > 0 ) ? $cpus : 1 ) * ( ( $files_per_chunk <= 0 ) ? 10 : $files_per_chunk );
+            my @cds_counter = sort( keys %cds );
+            for ( my $i = 0 ; $i < ceil( (@cds_counter) / $slice_size ) ; $i++ ) {
                 for ( my $j = $slice_size * $i ; $j < @cds_counter && $j < $slice_size * ( $i + 1 ) ; $j++ ) {
-                    my $pid = $cds_counter[$j];
-                    my $bls = Bio::SearchIO->new( -file => "$tempdir/$pid.seq.out", -format => $db->{FMT} );
-                    my $res = $bls->next_result or next;
-                    my $hit = $res->next_hit or next;
-                    my ( $prod, $gene, $EC ) = ( $hit->description, '', '' );
-                    if ( $prod =~ m/~~~/ ) {
-                        ( $EC, $gene, $prod ) = split m/~~~/, $prod;
-                        $EC =~ s/n\d+/-/g;    # collapse transitionary EC numbers
-                    }
-                    my $cleanprod = $self->cleanup_product($prod);
-                    if ( $cleanprod ne $prod ) {
-                        $self->msg("Modify product: $prod => $cleanprod");
-                        if ( $cleanprod eq $HYPO ) {
-                            $cds{$pid}->add_tag_value( 'note', $prod );
-                            $cds{$pid}->remove_tag('gene')      if $cds{$pid}->has_tag('gene');
-                            $cds{$pid}->remove_tag('EC_number') if $cds{$pid}->has_tag('EC_number');
-                        }
-                        $num_cleaned++;
-                    }
-                    $cds{$pid}->add_tag_value( 'product',   $cleanprod );
-                    $cds{$pid}->add_tag_value( 'EC_number', $EC ) if $EC;
-                    $cds{$pid}->add_tag_value( 'gene',      $gene ) if $gene;
-                    $cds{$pid}->add_tag_value( 'inference', $db->{SRC} . $hit->name );
-
-                    unlink "$tempdir/$pid.seq.out";
+                    $self->create_cds_sequences_in_file( $tempdir, $cds_counter[$j], $cds{ $cds_counter[$j] } );
                 }
+
+                for my $db (@database) {
+                    my $cmd = $db->{CMD};
+                    $cmd =~ s/%i/{}/g;
+                    $cmd =~ s/%o/{}.out/g;
+                    $cmd =~ s/%e/$evalue/g;
+                    $cmd =~ s,%d,$db->{DB},g;
+                    $self->msg( $db->{FMT}, "$count (of $num_cds) proteins against", $db->{DB} );
+
+                    $self->runcmd("nice parallel$paropts $cmd ::: $tempdir/*.seq");
+
+                    for ( my $j = $slice_size * $i ; $j < @cds_counter && $j < $slice_size * ( $i + 1 ) ; $j++ ) {
+                        my $pid = $cds_counter[$j];
+                        my $bls = Bio::SearchIO->new( -file => "$tempdir/$pid.seq.out", -format => $db->{FMT} );
+                        my $res = $bls->next_result or next;
+                        my $hit = $res->next_hit or next;
+                        my ( $prod, $gene, $EC ) = ( $hit->description, '', '' );
+                        if ( $prod =~ m/~~~/ ) {
+                            ( $EC, $gene, $prod ) = split m/~~~/, $prod;
+                            $EC =~ s/n\d+/-/g;    # collapse transitionary EC numbers
+                        }
+                        my $cleanprod = $self->cleanup_product($prod);
+                        if ( $cleanprod ne $prod ) {
+                            $self->msg("Modify product: $prod => $cleanprod");
+                            if ( $cleanprod eq $HYPO ) {
+                                $cds{$pid}->add_tag_value( 'note', $prod );
+                                $cds{$pid}->remove_tag('gene')      if $cds{$pid}->has_tag('gene');
+                                $cds{$pid}->remove_tag('EC_number') if $cds{$pid}->has_tag('EC_number');
+                            }
+                            $num_cleaned++;
+                        }
+                        $cds{$pid}->add_tag_value( 'product',   $cleanprod );
+                        $cds{$pid}->add_tag_value( 'EC_number', $EC ) if $EC;
+                        $cds{$pid}->add_tag_value( 'gene',      $gene ) if $gene;
+                        $cds{$pid}->add_tag_value( 'inference', $db->{SRC} . $hit->name );
+
+                        unlink "$tempdir/$pid.seq.out";
+                    }
+                }
+                unlink map { "$tempdir/$_.seq" } keys %cds;
+                unlink map { "$tempdir/$_.seq.out" } keys %cds;
             }
+
             unlink map { "$tempdir/$_.seq" } keys %cds;
             unlink map { "$tempdir/$_.seq.out" } keys %cds;
+
+            $self->msg("Cleaned $num_cleaned /product names") if $num_cleaned > 0;
         }
-
-        unlink map { "$tempdir/$_.seq" } keys %cds;
-        unlink map { "$tempdir/$_.seq.out" } keys %cds;
-
-        $self->msg("Cleaned $num_cleaned /product names") if $num_cleaned > 0;
     }
 
     if ($proteins) {
