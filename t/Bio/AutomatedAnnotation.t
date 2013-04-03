@@ -30,6 +30,7 @@ ok( $obj = Bio::AutomatedAnnotation->new(
  ), 'initialise obj an accession number');
 
 is($obj->_contig_uniq_id,'Accession456', 'Accession should be used if its provided' );
+ok($obj->_temp_directory_name,'Get a temp directory');
 
 
 done_testing();
