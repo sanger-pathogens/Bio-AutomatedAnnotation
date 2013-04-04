@@ -84,7 +84,8 @@ sub annotate {
         locustag       => $self->sample_name,
         outdir         => $self->outdir,
         force          => 1,
-        contig_uniq_id => $self->_contig_uniq_id
+        contig_uniq_id => $self->_contig_uniq_id,
+        cleanup_prod   => 0
     );
 
     if ( defined( $self->genus ) ) {

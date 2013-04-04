@@ -73,6 +73,7 @@ has 'evalue'          => ( is => 'ro', isa => 'Num',  default => 1E-6 );
 has 'rfam'            => ( is => 'ro', isa => 'Bool', default => 0 );
 has 'files_per_chunk' => ( is => 'ro', isa => 'Int',  default => 100 );
 has 'tempdir'         => ( is => 'ro', isa => 'Str',  default => '/tmp' );
+has 'cleanup_prod'    => ( is => 'ro', isa => 'Bool', default => 1 );
 
 has 'exe'     => ( is => 'ro', isa => 'Str', default => 'PROKKA' );
 has 'version' => ( is => 'ro', isa => 'Str', default => '1.5' );
@@ -756,19 +757,26 @@ sub annotate {
                             ( $EC, $gene, $prod ) = split m/~~~/, $prod;
                             $EC =~ s/n\d+/-/g;    # collapse transitionary EC numbers
                         }
-                        my $cleanprod = $self->cleanup_product($prod);
-                        if ( $cleanprod ne $prod ) {
-                            $self->msg("Modify product: $prod => $cleanprod");
-                            if ( $cleanprod eq $HYPO ) {
-                                $cds{$pid}->add_tag_value( 'note', $prod );
-                                $cds{$pid}->remove_tag('gene')      if $cds{$pid}->has_tag('gene');
-                                $cds{$pid}->remove_tag('EC_number') if $cds{$pid}->has_tag('EC_number');
+                        my $cleanprod = $prod;
+
+                        if ( $self->cleanup_prod ) {
+                            $cleanprod = $self->cleanup_product($prod);
+                            if ( $cleanprod ne $prod ) {
+                                $self->msg("Modify product: $prod => $cleanprod");
+                                if ( $cleanprod eq $HYPO ) {
+                                    $cds{$pid}->add_tag_value( 'note', $prod );
+                                    $cds{$pid}->remove_tag('gene')      if $cds{$pid}->has_tag('gene');
+                                    $cds{$pid}->remove_tag('EC_number') if $cds{$pid}->has_tag('EC_number');
+                                }
+                                $num_cleaned++;
                             }
-                            $num_cleaned++;
                         }
-                        $cds{$pid}->add_tag_value( 'product',   $cleanprod );
+                        $cds{$pid}->add_tag_value( 'product', $cleanprod );
                         $cds{$pid}->add_tag_value( 'EC_number', $EC ) if $EC;
-                        $cds{$pid}->add_tag_value( 'gene',      $gene ) if $gene;
+
+                        if ( defined($gene) && !$cds{$pid}->has_tag('gene') ) {
+                            $cds{$pid}->add_tag_value( 'gene', $gene );
+                        }
                         $cds{$pid}->add_tag_value( 'inference', $db->{SRC} . $hit->name );
 
                         unlink "$tempdir/$pid.seq.out";
