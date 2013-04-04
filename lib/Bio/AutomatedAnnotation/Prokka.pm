@@ -728,7 +728,7 @@ sub annotate {
         if ( $count > 0 ) {
 
             # Minimise the number of files created at a time. Tradeoff with efficiency of parallelisation.
-            # This creates X input files per CPU. Another X are outputted per CPU.
+            # This creates X files per CPU.
             my $slice_size = ( ( $cpus > 0 ) ? $cpus : 1 ) * ( ( $files_per_chunk <= 0 ) ? 10 : $files_per_chunk );
             my @cds_counter = sort( keys %cds );
             for ( my $i = 0 ; $i < ceil( (@cds_counter) / $slice_size ) ; $i++ ) {

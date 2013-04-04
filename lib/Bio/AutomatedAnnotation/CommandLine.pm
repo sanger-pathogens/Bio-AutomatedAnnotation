@@ -23,11 +23,12 @@ has 'annotation_tool'   => ( is => 'rw', isa => 'Str', default  => 'Prokka' );
 has 'tmp_directory'     => ( is => 'rw', isa => 'Str', default  => '/tmp' );
 has 'sequencing_centre' => ( is => 'rw', isa => 'Str', default  => 'SC' );
 has 'accession_number'  => ( is => 'rw', isa => 'Maybe[Str]' );
+has 'genus'             => ( is => 'rw', isa => 'Str' );
 
 sub BUILD {
     my ($self) = @_;
 
-    my ( $sample_name, $dbdir, $assembly_file, $annotation_tool, $tmp_directory, $sequencing_centre, $accession_number,
+    my ( $sample_name, $dbdir, $assembly_file, $annotation_tool, $tmp_directory, $sequencing_centre, $accession_number,$genus,
         $help );
 
     GetOptionsFromArray(
@@ -38,6 +39,7 @@ sub BUILD {
         't|tmp_directory=s'     => \$tmp_directory,
         'p|annotation_tool=s'   => \$annotation_tool,
         'c|sequencing_centre=s' => \$sequencing_centre,
+        'g|genus=s'             => \$genus,
         'n|accession_number=s'  => \$accession_number,
         'h|help'                => \$help,
     );
@@ -49,6 +51,7 @@ sub BUILD {
     $self->tmp_directory($tmp_directory)         if ( defined($tmp_directory) );
     $self->sequencing_centre($sequencing_centre) if ( defined($sequencing_centre) );
     $self->accession_number($accession_number)   if ( defined($accession_number) );
+    $self->genus($genus)                         if ( defined($genus) );
 
 }
 
@@ -62,7 +65,8 @@ sub run {
           sample_name      => $self->sample_name,
           accession_number => $self->accession_number,
           dbdir            => $self->dbdir,
-          tmp_directory    => $self->tmp_directory
+          tmp_directory    => $self->tmp_directory,
+          genus            => $self->genus
     );
     $obj->annotate;
 
