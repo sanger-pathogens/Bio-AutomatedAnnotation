@@ -774,7 +774,7 @@ sub annotate {
                         $cds{$pid}->add_tag_value( 'product', $cleanprod );
                         $cds{$pid}->add_tag_value( 'EC_number', $EC ) if $EC;
 
-                        if ( defined($gene) && !$cds{$pid}->has_tag('gene') ) {
+                        if ( defined($gene)  && $gene ne "" && !$cds{$pid}->has_tag('gene') ) {
                             $cds{$pid}->add_tag_value( 'gene', $gene );
                         }
                         $cds{$pid}->add_tag_value( 'inference', $db->{SRC} . $hit->name );
