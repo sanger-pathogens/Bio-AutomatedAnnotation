@@ -448,7 +448,7 @@ sub annotate {
           "cmscan --cpu $icpu -E $evalue --tblout /dev/stdout -o /dev/null --noali $cmdb $outdir/$prefix.fna |";
         while (<INFERNAL>) {
             my @x = split ' ';                                       # magic Perl whitespace splitter
-            print join( "~~~", @x ) . "\n";
+            #print join( "~~~", @x ) . "\n";
             next unless $x[1] =~ m/^RF\d/;
             push @{ $seq{$sid}{FEATURE} },
               Bio::SeqFeature::Generic->new(
