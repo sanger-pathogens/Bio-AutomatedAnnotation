@@ -87,6 +87,7 @@ sub annotate {
         contig_uniq_id => $self->_contig_uniq_id,
         cleanup_prod   => 0,
         cpus           => 1,
+        rfam           => 1,
     );
 
     if ( defined( $self->genus ) ) {
