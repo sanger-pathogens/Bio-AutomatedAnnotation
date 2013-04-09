@@ -451,14 +451,17 @@ sub annotate {
         open INFERNAL,
           "cmscan --cpu $icpu -E $evalue --tblout /dev/stdout -o /dev/null --noali $cmdb $outdir/$prefix.fna |";
         while (<INFERNAL>) {
+            next if(/\#/);
             my @x = split ' ';                                       # magic Perl whitespace splitter
             next if(@x < 16);
             next unless $x[1] =~ m/^RF\d/;
-            
+
             # The start coord is always the lowest
             my $start_coords = $x[7];
             my $end_coords   = $x[8];
             my $current_strand = $x[9] eq '-' ? -1 : +1;
+            $sid = $x[2];
+            
             if($start_coords> $end_coords)
             {
               my $tmp_coords = $end_coords;
