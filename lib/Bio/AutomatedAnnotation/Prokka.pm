@@ -331,6 +331,10 @@ sub annotate {
     my $sid;
     while (<TRNA>) {
         chomp;
+        if (m/^>end/) {
+          last;
+        }
+        
         if (m/^>(\S+)/) {
             $sid = $1;
             next;
@@ -448,7 +452,7 @@ sub annotate {
           "cmscan --cpu $icpu -E $evalue --tblout /dev/stdout -o /dev/null --noali $cmdb $outdir/$prefix.fna |";
         while (<INFERNAL>) {
             my @x = split ' ';                                       # magic Perl whitespace splitter
-            #print join( "~~~", @x ) . "\n";
+            next if(@x < 16);
             next unless $x[1] =~ m/^RF\d/;
             push @{ $seq{$sid}{FEATURE} },
               Bio::SeqFeature::Generic->new(
