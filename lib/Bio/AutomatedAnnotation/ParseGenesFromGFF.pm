@@ -17,6 +17,9 @@ Automated annotation of assemblies.
 
 use Moose;
 use Bio::Tools::GFF;
+use Bio::PrimarySeq;
+use Bio::SeqIO;
+use Bio::Perl;
 
 has 'gff_file'     => ( is => 'ro', isa => 'Str', required => 1 );
 has 'search_query' => ( is => 'ro', isa => 'Str', required => 1 );
@@ -25,9 +28,26 @@ has '_awk_filter' => ( is => 'ro', isa => 'Str',             lazy => 1, builder 
 has '_gff_parser' => ( is => 'ro', isa => 'Bio::Tools::GFF', lazy => 1, builder => '_build__gff_parser' );
 has '_tags_to_filter' => ( is => 'ro', isa => 'Str', default => 'CDS|tRNA|rRNA|tmRNA' );
 
-has 'matching_features' => ( is => 'ro', isa => 'ArrayRef', lazy => 1, builder => '_build_matching_features' );
+has '_matching_features' => ( is => 'ro', isa => 'ArrayRef', lazy => 1, builder => '_build__matching_features' );
 
-sub _build_matching_features {
+has '_bio_seq_objects' => ( is => 'ro', isa => 'ArrayRef', lazy => 1, builder => '_build__bio_seq_objects' );
+
+has '_sequences' => ( is => 'ro', isa => 'HashRef', lazy => 1, builder => '_build__sequences' );
+
+sub _build__sequences
+{
+  my ($self) = @_;
+
+  my %seq_names_to_sequences;
+  my @sequences = $self->_gff_parser->get_seqs;
+  for my $sequence(@sequences )
+  {
+    $seq_names_to_sequences{$sequence->id} = $sequence;
+  }
+  return \%seq_names_to_sequences;
+}
+
+sub _build__matching_features {
     my ($self) = @_;
     my @tag_names = ( 'gene', 'product' );
     my @matching_features;
@@ -37,6 +57,7 @@ sub _build_matching_features {
         for my $tag_name (@tag_names) {
             if ( $raw_feature->has_tag($tag_name) ) {
                 my @tag_values = $raw_feature->get_tag_values($tag_name);
+
                 for my $tag_value (@tag_values) {
                     if ( $tag_value =~ /$search_query/ ) {
                         push( @matching_features, $raw_feature );
@@ -56,11 +77,49 @@ sub _build__gff_parser {
     return Bio::Tools::GFF->new( -gff_version => 3, -fh => $fh );
 }
 
+sub _find_feature_id
+{
+  my ($self, $feature) = @_;
+  my $gene_id;
+  my @junk;
+  my @tag_names = ('ID', 'locus_tag');
+  
+  for my $tag_name (@tag_names)
+  {
+    if($feature->has_tag($tag_name))
+    {
+      ($gene_id, @junk) = $feature->get_tag_values($tag_name);
+      return $gene_id;
+    }
+  }
+
+  return $gene_id;
+}
+
+sub _build__bio_seq_objects
+{
+   my ($self) = @_;
+   my  @bio_seq_objects ;
+   
+   for my $feature (@{$self->_matching_features})
+   {
+     my $sequence_name = join('_',($feature->seq_id,$self->_find_feature_id($feature)));
+     
+     my $feature_sequence = $self->_sequences->{$feature->seq_id}->subseq($feature->start, $feature->end);
+     if($feature->strand == -1)
+     {
+       $feature_sequence = revcom($feature_sequence)->seq;
+     }
+     push(@bio_seq_objects, Bio::Seq->new(-display_id => $sequence_name, -seq => $feature_sequence ));
+   }
+   return \@bio_seq_objects;
+}
+
 # Parsing a GFF file with perl is slow, so filter out the bits we dont need first
 sub _build__awk_filter {
     my ($self) = @_;
     return
-        'awk \'{IGNORECASE = 1; if ($3 ~/'
+        'awk \'BEGIN {FS="\t"};{ IGNORECASE = 1; if ($3 ~/'
       . $self->_tags_to_filter
       . '/ && $9 ~ /'
       . $self->search_query
