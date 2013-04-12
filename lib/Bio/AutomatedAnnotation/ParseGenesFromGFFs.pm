@@ -58,7 +58,9 @@ sub create_fasta_file {
         -file   => ">" . $self->output_file
     );
     for my $parser_obj ( @{ $self->_parser_objects } ) {
+      next if(!defined($parser_obj->_bio_seq_objects) ||@{$parser_obj->_bio_seq_objects} == 0 );
         for my $seq_obj ( @{ $parser_obj->_bio_seq_objects } ) {
+          next if(!defined($seq_obj));
             $output_fh->write_seq($seq_obj);
         }
     }
