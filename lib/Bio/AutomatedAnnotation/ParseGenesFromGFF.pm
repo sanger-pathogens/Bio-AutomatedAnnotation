@@ -76,8 +76,8 @@ sub _build__matching_features {
 
 sub _build__gff_parser {
     my ($self) = @_;
-    open( my $fh, "-|", $self->_awk_filter . " " . $self->gff_file );
-    return Bio::Tools::GFF->new( -gff_version => 3, -fh => $fh );
+    open( my $fh, $self->gff_file );
+    return Bio::Tools::GFF->new( -gff_version => 3, -fh => $fh, alphabet => 'dna');
 }
 
 sub _find_feature_id {
@@ -99,6 +99,7 @@ sub _find_feature_id {
 sub _build__bio_seq_objects {
     my ($self) = @_;
     my @bio_seq_objects;
+    return \@bio_seq_objects if(!defined($self->_matching_features) || @{ $self->_matching_features } == 0);
 
     for my $feature ( @{ $self->_matching_features } ) {
         my $sequence_name = join( '_', ( $feature->seq_id, $self->_find_feature_id($feature) ) );
