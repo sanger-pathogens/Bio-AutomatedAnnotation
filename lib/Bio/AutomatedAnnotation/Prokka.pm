@@ -45,6 +45,8 @@ use Bio::SeqFeature::Generic;
 use FindBin;
 use POSIX;
 
+use Bio::AutomatedAnnotation::External::Cmscan;
+
 has 'assembly_file' => ( is => 'ro', isa => 'Str', required => 1 );
 
 has 'quiet'           => ( is => 'rw', isa => 'Bool', default => 1 );
@@ -445,49 +447,18 @@ sub annotate {
     my $cmdb = "$dbdir/cm/$kingdom";
     if ( $rfam and -r "$cmdb.i1m" ) {
         $self->msg("Scanning for ncRNAs... please be patient.");
-        my $num_ncrna = 0;                                           # FIXME --cpu !!
-        my $tool      = "Infernal:" . $tools{infernal}->{VERSION};
-        my $icpu      = $cpus || 1;
-        open INFERNAL,
-          "cmscan --cpu $icpu -E $evalue --tblout /dev/stdout -o /dev/null --noali $cmdb $outdir/$prefix.fna |";
-        while (<INFERNAL>) {
-            next if(/\#/);
-            my @x = split ' ';                                       # magic Perl whitespace splitter
-            next if(@x < 16);
-            next unless $x[1] =~ m/^RF\d/;
 
-            # The start coord is always the lowest
-            my $start_coords = $x[7];
-            my $end_coords   = $x[8];
-            my $current_strand = $x[9] eq '-' ? -1 : +1;
-            $sid = $x[2];
-            
-            if($start_coords> $end_coords)
-            {
-              my $tmp_coords = $end_coords;
-              $end_coords = $start_coords;
-              $start_coords = $tmp_coords;
-              $current_strand = -1;
-            }
-            
-            push @{ $seq{$sid}{FEATURE} },
-              Bio::SeqFeature::Generic->new(
-                -primary => 'ncRNA',
-                -seq_id  => $sid,
-                -source  => $tool,
-                -start   => $start_coords,
-                -end     => $end_coords ,
-                -strand  => $current_strand,
-                -score   => '.',
-                -frame   => 0,
-                -tag     => {
-                    'product'   => $x[0],
-                    'inference' => "COORDINATES:profile:$tool",
-                }
-              );
-            $num_ncrna++;
-        }
-        $self->msg("Found $num_ncrna ncRNAs.");
+         my $cmscan_obj = Bio::AutomatedAnnotation::External::Cmscan->new(
+           cmdb       => $cmdb,
+           input_file => "$outdir/$prefix.fna",
+           exec       => 'cmscan',
+           version    => $tools{infernal}->{VERSION},
+           cpus       => $cpus,
+           evalue     => $evalue,
+         );
+        $self->add_features_to_prokka_structure(\%seq);
+        
+        $self->msg("Found ".$self->number_of_features." ncRNAs.");
     }
     else {
         $self->msg("Disabling ncRNA search, can't find $cmdb file.");

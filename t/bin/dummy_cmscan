@@ -1,0 +1,2 @@
+#!/usr/bin/env perl
+system("cat t/data/cmscan_output.txt");
