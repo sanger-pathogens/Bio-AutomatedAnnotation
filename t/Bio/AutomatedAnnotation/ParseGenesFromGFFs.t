@@ -17,7 +17,8 @@ ok(
     $obj = Bio::AutomatedAnnotation::ParseGenesFromGFFs->new(
         gff_files     => ['t/data/example_annotation.gff'],
         search_query => 'yfnB',
-        search_qualifiers => [ 'gene', 'product' ]
+        search_qualifiers => [ 'gene', 'product' ],
+        amino_acids => 0
     ),
     'initialise obj with all defaults'
 );
@@ -26,7 +27,18 @@ ok($obj->create_fasta_file, 'Create a fasta file');
 is(read_file('output.yfnB.fa'), read_file('t/data/expected_output.yfnB.fa'), 'output fasta is as expected');
 unlink('output.yfnB.fa');
 
-
+ok(
+    $obj = Bio::AutomatedAnnotation::ParseGenesFromGFFs->new(
+        gff_files     => ['t/data/example_annotation.gff'],
+        search_query => 'yfnB',
+        search_qualifiers => [ 'gene', 'product' ],
+        amino_acids => 1
+    ),
+    'initialise obj and output amino acids'
+);
+ok($obj->create_fasta_file, 'Create a fasta file with translated amino acids');
+is(read_file('output.yfnB.fa'), read_file('t/data/expected_aa_output.yfnB.fa'), 'output fasta with amino acids as expected');
+unlink('output.yfnB.fa');
 
 ok(
     $obj = Bio::AutomatedAnnotation::ParseGenesFromGFFs->new(
