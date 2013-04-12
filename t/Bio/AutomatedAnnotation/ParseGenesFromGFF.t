@@ -62,4 +62,18 @@ ok(
 );
 is( @{ $obj->_matching_features }, 5, 'Should have lots of hypothetical proteins ' );
 
+
+
+ok(
+    $obj = Bio::AutomatedAnnotation::ParseGenesFromGFF->new(
+        gff_file     => 't/data/example_annotation.gff',
+        search_query => 'nonexistantgenename'
+    ),
+    'initialise obj with a non existant gene name'
+);
+
+is_deeply($obj->_bio_seq_objects, [], 'Nothing should be found');
+
+
+
 done_testing();
