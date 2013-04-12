@@ -458,7 +458,7 @@ sub annotate {
          );
         $cmscan_obj->add_features_to_prokka_structure(\%seq);
         
-        $self->msg("Found ".$self->number_of_features." ncRNAs.");
+        $self->msg("Found ".$cmscan_obj->number_of_features." ncRNAs.");
     }
     else {
         $self->msg("Disabling ncRNA search, can't find $cmdb file.");
