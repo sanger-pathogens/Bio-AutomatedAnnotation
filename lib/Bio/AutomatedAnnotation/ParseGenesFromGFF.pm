@@ -26,7 +26,7 @@ has 'search_query' => ( is => 'ro', isa => 'Str', required => 1 );
 
 has '_awk_filter' => ( is => 'ro', isa => 'Str',             lazy => 1, builder => '_build__awk_filter' );
 has '_gff_parser' => ( is => 'ro', isa => 'Bio::Tools::GFF', lazy => 1, builder => '_build__gff_parser' );
-has '_tags_to_filter'    => ( is => 'ro', isa => 'Str',      default => 'CDS|tRNA|rRNA|tmRNA' );
+has '_tags_to_filter'    => ( is => 'ro', isa => 'Str',      default => 'CDS' );
 has '_matching_features' => ( is => 'ro', isa => 'ArrayRef', lazy    => 1, builder => '_build__matching_features' );
 has '_bio_seq_objects'   => ( is => 'ro', isa => 'ArrayRef', lazy    => 1, builder => '_build__bio_seq_objects' );
 has 'search_qualifiers' => ( is => 'ro', isa => 'ArrayRef', lazy    => 1, builder => '_build_search_qualifiers' );
@@ -41,7 +41,6 @@ sub _build_search_qualifiers
 
 sub _build__sequences {
     my ($self) = @_;
-
     my %seq_names_to_sequences;
     my @sequences = $self->_gff_parser->get_seqs;
     for my $sequence (@sequences) {
@@ -76,7 +75,7 @@ sub _build__matching_features {
 
 sub _build__gff_parser {
     my ($self) = @_;
-    open( my $fh, $self->gff_file );
+    open( my $fh, '-|', $self->_awk_filter." ".$self->gff_file );
     return Bio::Tools::GFF->new( -gff_version => 3, -fh => $fh, alphabet => 'dna');
 }
 
@@ -92,7 +91,6 @@ sub _find_feature_id {
             return $gene_id;
         }
     }
-
     return $gene_id;
 }
 
