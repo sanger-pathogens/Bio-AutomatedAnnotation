@@ -25,6 +25,8 @@ ok(
 is($obj->output_file, 'output.yfnB.fa', 'create outputfilename');
 ok($obj->create_fasta_file, 'Create a fasta file');
 is(read_file('output.yfnB.fa'), read_file('t/data/expected_output.yfnB.fa'), 'output fasta is as expected');
+is($obj->files_without_hits, 0, 'no files were without hits');
+is($obj->files_with_hits, 1, '1 file had hits');
 unlink('output.yfnB.fa');
 
 ok(
@@ -78,6 +80,23 @@ ok(
 ok($obj->create_fasta_file, 'Create an empty fasta file');
 is(read_file('output.16SribosomalRNA.fa'), '', 'Create an empty fasta file and check its empty');
 unlink('output.16SribosomalRNA.fa');
+
+
+ok(
+    $obj = Bio::AutomatedAnnotation::ParseGenesFromGFFs->new(
+        gff_files     => ['t/data/example_annotation.gff','t/data/empty_annotation.gff'],
+        search_query => 'yfnB',
+        search_qualifiers => [ 'gene' ],
+        amino_acids => 0
+    ),
+    'initialise obj with two input files'
+);
+
+ok($obj->create_fasta_file, 'Create a fasta file');
+is(read_file('output.yfnB.fa'), read_file('t/data/expected_output.yfnB.fa'), 'output fasta is as expected');
+is($obj->files_without_hits, 1, '1 file had no hits');
+is($obj->files_with_hits, 1, '1 file had hits');
+unlink('output.yfnB.fa');
 
 
 done_testing();
