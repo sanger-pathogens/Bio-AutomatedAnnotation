@@ -456,7 +456,7 @@ sub annotate {
            cpus       => $cpus,
            evalue     => $evalue,
          );
-        $self->add_features_to_prokka_structure(\%seq);
+        $cmscan_obj->add_features_to_prokka_structure(\%seq);
         
         $self->msg("Found ".$self->number_of_features." ncRNAs.");
     }
