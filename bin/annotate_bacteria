@@ -14,6 +14,6 @@ Wrapper script to annotate bacteria.
 BEGIN { unshift( @INC, '../lib' ) }
 BEGIN { unshift( @INC, './lib' ) }
 BEGIN { unshift( @INC, '/software/pathogen/internal/prod/lib/' ) }
-use Bio::AutomatedAnnotation::CommandLine;
+use Bio::AutomatedAnnotation::CommandLine::AnnotateBacteria;
 
-Bio::AutomatedAnnotation::CommandLine->new(args => \@ARGV, script_name => $0)->run;
+Bio::AutomatedAnnotation::CommandLine::AnnotateBacteria->new(args => \@ARGV, script_name => $0)->run;
