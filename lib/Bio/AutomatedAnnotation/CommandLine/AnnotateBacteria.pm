@@ -1,4 +1,4 @@
-package Bio::AutomatedAnnotation::CommandLine;
+package Bio::AutomatedAnnotation::CommandLine::AnnotateBacteria;
 
 # ABSTRACT: provide a commandline interface to the annotation wrappers
 
@@ -83,7 +83,7 @@ sub usage_text {
     $script_name -a contigs.fa --dbdir /path/to/dbs  --sample_name Sample123
 
     # This help message
-    eukaryote_mapping -h
+    annotate_bacteria -h
 
 USAGE
 }
