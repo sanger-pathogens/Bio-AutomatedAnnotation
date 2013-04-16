@@ -121,6 +121,7 @@ is_deeply(
     'gene names extracted and merged'
 );
 
+
 ok(
     $obj = Bio::AutomatedAnnotation::GeneNameOccurances->new(
         gff_files => ['t/data/copy_of_example_annotation.gff','t/data/different_to_example_annotation.gff','t/data/example_annotation.gff'],
@@ -145,6 +146,19 @@ is_deeply(
         },
     'gene names extracted and merged with correct increments'
 );
+
+is_deeply($obj->sorted_all_gene_names, [
+          'speH',
+          'hly',
+          'arcC1',
+          'yfnB',
+          'argF',
+          'another_argF',
+          'another_hly',
+          'another_yfnB',
+          'another_arcC1',
+          'another_speH'
+        ], 'gene names sorted by value desc');
 
 
 done_testing();
