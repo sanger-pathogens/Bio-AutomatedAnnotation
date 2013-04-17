@@ -44,7 +44,6 @@ sub run {
     my ($self) = @_;
     system( $self->_command_to_run );
     # cleanup output files
-    
     1;
 }
 

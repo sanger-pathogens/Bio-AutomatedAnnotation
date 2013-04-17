@@ -7,7 +7,7 @@ package Bio::AutomatedAnnotation::CombinedProteome;
 Take in multiple FASTA sequences containing proteomes and concat them together and output a FASTA file
    use Bio::AutomatedAnnotation::CombinedProteome;
    
-   my $obj = Bio::AutomatedAnnotation::GeneNamesFromGFF->new(
+   my $obj = Bio::AutomatedAnnotation::CombinedProteome->new(
      proteome_files   => ['abc.fa','efg.fa'],
      output_filename   => 'example_output.fa'
    );

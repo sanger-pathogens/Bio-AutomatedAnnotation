@@ -56,6 +56,7 @@ sub _command_to_run {
 sub run {
     my ($self) = @_;
     system( $self->_command_to_run );
+    1;
 }
 
 no Moose;
