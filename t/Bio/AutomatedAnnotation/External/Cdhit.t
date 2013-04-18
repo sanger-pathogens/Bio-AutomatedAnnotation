@@ -20,11 +20,10 @@ ok($obj = Bio::AutomatedAnnotation::External::Cdhit->new(
   exec         =>  $cwd.'/t/bin/dummy_cd-hit',
 ),'initialise object');
 
-is($obj->_command_to_run, $cwd.'/t/bin/dummy_cd-hit -i t/data/some_fasta_file.fa -o output -T 1 -M 1000 -g 1 -s 0.9 -c 0.95', 'Command constructed as expected');
+is($obj->_command_to_run, $cwd.'/t/bin/dummy_cd-hit -i t/data/some_fasta_file.fa -o output -T 1 -M 1000 -g 1 -s 0.9 -c 0.95 2> /dev/null', 'Command constructed as expected');
 ok($obj->run(), 'run dummy command');
 unlink('output');
 unlink('output.clstr');
 unlink('output.bak.clstr');
-
 
 done_testing();

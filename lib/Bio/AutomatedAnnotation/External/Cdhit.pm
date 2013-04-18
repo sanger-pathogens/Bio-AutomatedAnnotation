@@ -26,6 +26,7 @@ has '_max_available_memory_in_mb'  => ( is => 'ro', isa => 'Int',  default  => 1
 has '_use_most_similar_clustering' => ( is => 'ro', isa => 'Bool', default  => 1 );
 has '_length_difference_cutoff'    => ( is => 'ro', isa => 'Num',  default  => 0.9 );
 has '_sequence_identity_threshold' => ( is => 'ro', isa => 'Num',  default  => 0.95 );
+has '_logging'          => ( is => 'ro', isa => 'Str', default  => '2> /dev/null' );
 
 sub _command_to_run {
     my ($self) = @_;
@@ -35,7 +36,8 @@ sub _command_to_run {
             $self->exec,                        '-i', $self->input_file,                   '-o',
             $self->output_base,                 '-T', $self->_number_of_threads,           '-M',
             $self->_max_available_memory_in_mb, '-g', $self->_use_most_similar_clustering, '-s',
-            $self->_length_difference_cutoff,   '-c', $self->_sequence_identity_threshold,
+            $self->_length_difference_cutoff,   '-c', $self->_sequence_identity_threshold, 
+            $self->_logging
         )
     );
 }
