@@ -32,8 +32,6 @@ is(
 );
 unlink('combined_proteome.fa');
 
-
-
 ok(
     $obj = Bio::AutomatedAnnotation::CombinedProteome->new(
         proteome_files  => [ 't/data/example_1.faa','t/data/sequences_with_unknowns.faa', 't/data/example_2.faa' ],
