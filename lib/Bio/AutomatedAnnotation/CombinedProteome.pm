@@ -66,6 +66,7 @@ sub _add_sequences_from_file
       $self->number_of_sequences_ignored($self->number_of_sequences_ignored + 1);
       next; 
     }
+    $seq->description(undef);
     $out_fasta_obj->write_seq($seq);
   }
   return 1;
