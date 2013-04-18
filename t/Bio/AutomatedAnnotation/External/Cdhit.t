@@ -26,6 +26,5 @@ unlink('output');
 unlink('output.clstr');
 unlink('output.bak.clstr');
 
-1;
 
 done_testing();
