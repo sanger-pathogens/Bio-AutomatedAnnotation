@@ -14,6 +14,7 @@ use Bio::AutomatedAnnotation::CombinedProteome;
 use Bio::AutomatedAnnotation::External::Cdhit;
 use Bio::AutomatedAnnotation::External::Makeblastdb;
 use Bio::AutomatedAnnotation::External::Blastp;
+use Bio::AutomatedAnnotation::GGFile;
 
 has 'args'        => ( is => 'ro', isa => 'ArrayRef', required => 1 );
 has 'script_name' => ( is => 'ro', isa => 'Str',      required => 1 );
@@ -84,6 +85,12 @@ sub run {
      output_file    => 'results.out'
    );
    $blastp_obj->run();
+
+   print "Create GG file:\n";
+   my $ggfile = Bio::AutomatedAnnotation::GGFile->new(
+     fasta_file   => 'clustered.faa'
+   );
+   $ggfile->create_gg_file;
 }
 
 sub usage_text {
