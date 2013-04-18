@@ -27,7 +27,7 @@ use Cwd;
 
 has 'fasta_file'         => ( is => 'ro', isa => 'Str', required => 1 );
 has 'exec'               => ( is => 'ro', isa => 'Str', default  => 'makeblastdb' );
-has '_working_directory' => ( is => 'ro', isa => 'Str', default  => sub { File::Temp->newdir( DIR => getcwd, CLEANUP => 1 ); } );
+has '_working_directory' => ( is => 'ro', isa => 'File::Temp::Dir', default  => sub { File::Temp->newdir( DIR => getcwd, CLEANUP => 1 ); } );
 has '_dbtype'            => ( is => 'ro', isa => 'Str', default  => 'prot' );
 has '_logfile'           => ( is => 'ro', isa => 'Str', default  => '/dev/null' );
 has 'output_database'    => ( is => 'ro', isa => 'Str', lazy     => 1, builder => '_build_output_database' );
@@ -54,6 +54,7 @@ sub _command_to_run {
 sub run {
     my ($self) = @_;
     system( $self->_command_to_run );
+    1;
 }
 
 no Moose;

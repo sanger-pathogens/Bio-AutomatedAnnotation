@@ -66,7 +66,8 @@ sub run {
       );
    $combined_proteome_obj->create_combined_proteome_file;
    print "Created combined file:\n";
-   print (($combined_proteome_obj->number_of_sequences_ignored/$combined_proteome_obj->number_of_sequences_seen)*100)."  percent of sequences ignored\n";
+   my $percentage_sequences_ignored = (($combined_proteome_obj->number_of_sequences_ignored/$combined_proteome_obj->number_of_sequences_seen)*100);
+   print $percentage_sequences_ignored."  percent of sequences ignored\n";
    
    print "Clustering the data:\n";
    my $cdhit_obj = Bio::AutomatedAnnotation::External::Cdhit->new( input_file   => 'combined_proteome.faa', output_base  => 'clustered.faa');
