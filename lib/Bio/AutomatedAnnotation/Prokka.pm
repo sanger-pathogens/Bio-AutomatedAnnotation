@@ -63,7 +63,7 @@ has 'genus'           => ( is => 'rw', isa => 'Str',  default => 'Genus' );
 has 'species'         => ( is => 'ro', isa => 'Str',  default => 'species' );
 has 'strain'          => ( is => 'ro', isa => 'Str',  default => 'strain' );
 has 'contig_uniq_id'  => ( is => 'ro', isa => 'Str',  default => 'gnl' );
-has 'kingdom'         => ( is => 'ro', isa => 'Str',  default => 'Bacteria' );
+has 'kingdom'         => ( is => 'rw', isa => 'Str',  default => 'Bacteria' );
 has 'gcode'           => ( is => 'ro', isa => 'Int',  default => 0 );
 has 'gram'            => ( is => 'ro', isa => 'Str',  default => '' );
 has 'usegenus'        => ( is => 'rw', isa => 'Bool', default => 0 );
