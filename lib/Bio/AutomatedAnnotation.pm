@@ -34,6 +34,7 @@ has 'tmp_directory'     => ( is => 'ro', isa => 'Str', default  => '/tmp' );
 has 'sequencing_centre' => ( is => 'ro', isa => 'Str', default  => 'SC' );
 has 'genus'             => ( is => 'ro', isa => 'Maybe[Str]' );
 has 'accession_number'  => ( is => 'ro', isa => 'Maybe[Str]' );
+has 'kingdom'           => ( is => 'ro', isa => 'Maybe[Str]' );
 
 has '_annotation_pipeline_class' =>
   ( is => 'ro', isa => 'Str', lazy => 1, builder => '_build__annotation_pipeline_class' );
@@ -93,6 +94,11 @@ sub annotate {
     if ( defined( $self->genus ) ) {
         $annotation_pipeline->genus( $self->genus );
         $annotation_pipeline->usegenus(1);
+    }
+    
+    if(defined($self->kingdom))
+    {
+      $annotation_pipeline->kingdom( $self->kingdom );
     }
 
     $annotation_pipeline->annotate;
