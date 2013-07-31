@@ -25,6 +25,7 @@ ok($obj = Bio::AutomatedAnnotation::InterProScan->new(
   input_file   => $cwd.'/t/data/input_proteins.faa',
   exec             => $cwd.'/t/bin/dummy_interproscan',
   _protein_files_per_cpu => 2,
+  _proteins_per_file  => 1,
 ),'Initialise object creating 2 protein files per iteration');
 
 ok(my $file_names = $obj->_create_a_number_of_protein_files(2), 'create files');

@@ -27,7 +27,8 @@ has 'exec'                   => ( is => 'ro', isa => 'Str', required => 1 );
 has 'output_filename'        => ( is => 'ro', isa => 'Str', default  => 'iprscan_results.gff' );
 has '_protein_file_suffix'   => ( is => 'ro', isa => 'Str', default  => '.seq' );
 has '_tmp_directory'         => ( is => 'rw', isa => 'Str', default  => '/tmp' );
-has '_protein_files_per_cpu' => ( is => 'rw', isa => 'Int', default  => 40 );
+has '_protein_files_per_cpu' => ( is => 'rw', isa => 'Int', default  => 10 );
+has '_proteins_per_file'     => ( is => 'rw', isa => 'Int', default  => 10 );
 has '_temp_directory_obj' =>
   ( is => 'ro', isa => 'File::Temp::Dir', lazy => 1, builder => '_build__temp_directory_obj' );
 has '_temp_directory_name' => ( is => 'ro', isa => 'Str', lazy => 1, builder => '_build__temp_directory_name' );
@@ -55,7 +56,10 @@ sub _build__input_file_parser {
 sub _create_protein_file {
     my ( $self, $seq_io_protein, $counter ) = @_;
     my $output_filename = $self->_temp_directory_name . '/' . $counter . $self->_protein_file_suffix;
-    my $fout = Bio::SeqIO->new( -file => ">" . $output_filename, -format => 'Fasta', -alphabet => 'protein' );
+    my $fout = Bio::SeqIO->new( -file => ">>" . $output_filename, -format => 'Fasta', -alphabet => 'protein' );
+    my $raw_sequence = $seq_io_protein->seq;
+    $raw_sequence =~ s/\*//;
+    $seq_io_protein->seq($raw_sequence);
     $fout->write_seq($seq_io_protein);
     return $output_filename;
 }
@@ -65,7 +69,7 @@ sub _create_a_number_of_protein_files {
     my @file_names;
     my $counter = 0;
     while ( my $seq = $self->_input_file_parser->next_seq ) {
-        push( @file_names, $self->_create_protein_file( $seq, $counter ) );
+        push( @file_names, $self->_create_protein_file( $seq, int($counter/$self->_proteins_per_file) ) );
         $counter++;
         last if ( $self->_protein_files_per_cpu == $counter );
     }
