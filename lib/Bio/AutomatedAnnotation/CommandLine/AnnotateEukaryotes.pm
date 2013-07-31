@@ -18,12 +18,13 @@ has 'script_name' => ( is => 'ro', isa => 'Str',      required => 1 );
 has 'help'        => ( is => 'rw', isa => 'Bool',     default  => 0 );
 has 'cpus'        => ( is => 'rw', isa => 'Int',      default  => 1 );
 has 'exec_script' => ( is => 'rw', isa => 'Str',      default  => 'interproscan.sh' );
-has 'proteins_file' => ( is => 'rw', isa => 'Str' );
-has 'tmp_directory' => ( is => 'rw', isa => 'Str', default => '/tmp' );
+has 'proteins_file'   => ( is => 'rw', isa => 'Str' );
+has 'tmp_directory'   => ( is => 'rw', isa => 'Str', default => '/tmp' );
+has 'output_filename' => ( is => 'rw', isa => 'Str', default => 'iprscan_results.gff' );
 
 sub BUILD {
     my ($self) = @_;
-    my ( $proteins_file, $tmp_directory, $help, $exec_script, $cpus );
+    my ( $proteins_file, $tmp_directory, $help, $exec_script, $cpus, $output_filename );
 
     GetOptionsFromArray(
         $self->args,
@@ -31,6 +32,7 @@ sub BUILD {
         't|tmp_directory=s' => \$tmp_directory,
         'e|exec_script=s'   => \$exec_script,
         'p|cpus=s'          => \$cpus,
+        'o|output_filename=s'        => \$output_filename,
         'h|help'            => \$help,
     );
 
@@ -41,6 +43,7 @@ sub BUILD {
     }
     $self->exec_script($exec_script) if ( defined($exec_script) );
     $self->cpus($cpus)               if ( defined($cpus) );
+    $self->output_filename($output_filename)  if ( defined($output_filename) );
 }
 
 sub run {
@@ -51,7 +54,8 @@ sub run {
         input_file     => $self->proteins_file,
         _tmp_directory => $self->tmp_directory,
         cpus           => $self->cpus,
-        exec           => $self->exec_script
+        exec           => $self->exec_script,
+        output_filename => $self->output_filename         
     );
     $obj->annotate;
 
