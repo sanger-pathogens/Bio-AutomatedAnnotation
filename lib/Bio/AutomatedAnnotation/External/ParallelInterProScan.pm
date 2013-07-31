@@ -40,8 +40,8 @@ sub _cmd
 
 sub run {
     my ($self) = @_;
-
-    system($self->_cmd);
+    my $cmd = $self->_cmd;
+    `$cmd`;
     1;
 }
 

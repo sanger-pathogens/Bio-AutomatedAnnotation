@@ -21,7 +21,7 @@ use Bio::AutomatedAnnotation::External::ParallelInterProScan;
 
 has 'input_file'           => ( is => 'ro', isa => 'Str', required => 1 );
 has 'cpus'                 => ( is => 'ro', isa => 'Int', default  => 1 );
-has 'exec'                 => ( is => 'ro', isa => 'Str', default  => 'interproscan.sh' );
+has 'exec'                 => ( is => 'ro', isa => 'Str', required => 1 );
 has '_protein_file_suffix' => ( is => 'ro', isa => 'Str', default  => '.seq' );
 has '_tmp_directory'     => ( is => 'rw', isa => 'Str', default  => '/tmp' );
 has '_protein_files_per_cpu'     => ( is => 'rw', isa => 'Int', default  => 10 );
