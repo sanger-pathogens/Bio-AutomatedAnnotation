@@ -10,19 +10,20 @@ provide a commandline interface to the annotation wrappers
 
 use Moose;
 use Getopt::Long qw(GetOptionsFromArray);
-use Bio::AutomatedAnnotation;
+use Cwd;
+use Bio::AutomatedAnnotation::InterProScan;
 
 has 'args'        => ( is => 'ro', isa => 'ArrayRef', required => 1 );
 has 'script_name' => ( is => 'ro', isa => 'Str',      required => 1 );
 has 'help'        => ( is => 'rw', isa => 'Bool',     default  => 0 );
 has 'cpus'        => ( is => 'rw', isa => 'Int',      default  => 1 );
-has 'exec_script'        => ( is => 'rw', isa => 'Str',      default  => 'interproscan.sh' );
-has 'proteins_input_file' => ( is => 'rw', isa => 'Str' );
+has 'exec_script' => ( is => 'rw', isa => 'Str',      default  => 'interproscan.sh' );
+has 'proteins_file' => ( is => 'rw', isa => 'Str' );
 has 'tmp_directory' => ( is => 'rw', isa => 'Str', default => '/tmp' );
 
 sub BUILD {
     my ($self) = @_;
-    my ( $proteins_file, $tmp_directory, $help, $exec_script,$cpus );
+    my ( $proteins_file, $tmp_directory, $help, $exec_script, $cpus );
 
     GetOptionsFromArray(
         $self->args,
@@ -34,21 +35,24 @@ sub BUILD {
     );
 
     $self->proteins_file($proteins_file) if ( defined($proteins_file) );
-    $self->tmp_directory($tmp_directory) if ( defined($tmp_directory) );
-    $self->exec_script($exec_script)     if ( defined($exec_script) );
-    $self->cpus($cpus)                   if ( defined($cpus) );
+    if ( defined($tmp_directory) ) { $self->tmp_directory($tmp_directory); }
+    else {
+        $self->tmp_directory( getcwd() );
+    }
+    $self->exec_script($exec_script) if ( defined($exec_script) );
+    $self->cpus($cpus)               if ( defined($cpus) );
 }
 
 sub run {
     my ($self) = @_;
     ( ( -e $self->proteins_file ) && !$self->help ) or die $self->usage_text;
 
-    my $obj = Bio::AutomatedAnnotation::InterProScan->new( 
-      input_file     => $self->proteins_file,
-      _tmp_directory => $self->tmp_directory,
-      cpus           => $self->cpus,
-      exec           => $self->exec_script
-       );
+    my $obj = Bio::AutomatedAnnotation::InterProScan->new(
+        input_file     => $self->proteins_file,
+        _tmp_directory => $self->tmp_directory,
+        cpus           => $self->cpus,
+        exec           => $self->exec_script
+    );
     $obj->annotate;
 
 }
