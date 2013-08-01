@@ -28,7 +28,7 @@ has 'output_filename'        => ( is => 'ro', isa => 'Str', default  => 'iprscan
 has '_protein_file_suffix'   => ( is => 'ro', isa => 'Str', default  => '.seq' );
 has '_tmp_directory'         => ( is => 'rw', isa => 'Str', default  => '/tmp' );
 has '_protein_files_per_cpu' => ( is => 'rw', isa => 'Int', default  => 10 );
-has '_proteins_per_file'     => ( is => 'rw', isa => 'Int', default  => 10 );
+has '_proteins_per_file'     => ( is => 'rw', isa => 'Int', default  => 20 );
 has '_temp_directory_obj' =>
   ( is => 'ro', isa => 'File::Temp::Dir', lazy => 1, builder => '_build__temp_directory_obj' );
 has '_temp_directory_name' => ( is => 'ro', isa => 'Str', lazy => 1, builder => '_build__temp_directory_name' );
@@ -66,14 +66,16 @@ sub _create_protein_file {
 
 sub _create_a_number_of_protein_files {
     my ( $self, $files_to_create ) = @_;
-    my @file_names;
+    my %file_names;
     my $counter = 0;
     while ( my $seq = $self->_input_file_parser->next_seq ) {
-        push( @file_names, $self->_create_protein_file( $seq, int($counter/$self->_proteins_per_file) ) );
+        $file_names{$self->_create_protein_file( $seq, int($counter/$self->_proteins_per_file) ) } ++;
+        
         $counter++;
-        last if ( $self->_protein_files_per_cpu == $counter );
+        last if ( $self->_protein_files_per_cpu*$self->cpus*$self->_proteins_per_file == $counter );
     }
-    return \@file_names;
+    my @uniq_files = sort keys %file_names;
+    return \@uniq_files;
 }
 
 sub _delete_list_of_files {
@@ -120,7 +122,25 @@ sub annotate {
         $self->_delete_list_of_files($output_files);
         $self->_merge_block_results_with_final($intermediate_results_filename);
     }
+    
+    $self->_merge_proteins_into_gff($self->input_file, $self->output_filename);
+    
     return $self;
+}
+
+sub _merge_proteins_into_gff
+{
+  my ( $self, $input_file, $output_file) = @_;
+  open(my $output_fh, '>>', $output_file) or Bio::AutomatedAnnotation::Exceptions::CouldntWriteToFile->throw( error => "Couldnt write to file: " . $output_file );
+  open(my $input_fh, $input_file) or Bio::AutomatedAnnotation::Exceptions::FileNotFound->throw( error => "Couldnt open file: " . $input_file );
+  
+  print {$output_fh} "##FASTA\n";
+  while(<$input_fh>)
+  {
+    print {$output_fh} $_;
+  }
+  close($output_fh);
+  close($input_fh);
 }
 
 sub _merge_block_results_with_final {
@@ -131,7 +151,7 @@ sub _merge_block_results_with_final {
             output_file => join( '/', ( $self->_temp_directory_name, 'merge_with_final.gff' ) ),
         );
         $merge_intermediate_gff_files_obj->merge_files;
-        move( 'merge_with_final.gff', $self->output_filename );
+        move( join( '/', ( $self->_temp_directory_name, 'merge_with_final.gff' ) ), $self->output_filename );
     }
     else {
         move( $intermediate_filename, $self->output_filename );
