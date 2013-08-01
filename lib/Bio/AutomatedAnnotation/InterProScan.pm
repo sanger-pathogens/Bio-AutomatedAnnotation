@@ -28,7 +28,8 @@ has 'exec'                   => ( is => 'ro', isa => 'Str', required => 1 );
 has 'output_filename'        => ( is => 'ro', isa => 'Str', default  => 'iprscan_results.gff' );
 has '_protein_file_suffix'   => ( is => 'ro', isa => 'Str', default  => '.seq' );
 has '_tmp_directory'         => ( is => 'ro', isa => 'Str', default  => '/tmp' );
-has '_protein_files_per_cpu' => ( is => 'ro', isa => 'Int', default  => 20 );
+has '_default_protein_files_per_cpu' => ( is => 'ro', isa => 'Int', default  => 20 );
+has '_protein_files_per_cpu' => ( is => 'ro', isa => 'Int',  lazy => 1, builder => '_build__protein_files_per_cpu' );
 has '_proteins_per_file'     => ( is => 'ro', isa => 'Int', default  => 20 );
 has '_temp_directory_obj' =>
   ( is => 'ro', isa => 'File::Temp::Dir', lazy => 1, builder => '_build__temp_directory_obj' );
@@ -36,6 +37,19 @@ has '_temp_directory_name' => ( is => 'ro', isa => 'Str', lazy => 1, builder => 
 has '_input_file_parser' => ( is => 'ro', lazy => 1, builder => '_build__input_file_parser' );
 
 has 'use_lsf' => ( is => 'ro', isa => 'Bool', default => 0 );
+
+sub _build__protein_files_per_cpu
+{
+  my ($self) = @_;
+  if($self->use_lsf == 1)
+  {
+    return 1;
+  }
+  else
+  {
+    return $self->_default_protein_files_per_cpu;
+  }
+}
 
 sub _build__temp_directory_obj {
     my ($self) = @_;

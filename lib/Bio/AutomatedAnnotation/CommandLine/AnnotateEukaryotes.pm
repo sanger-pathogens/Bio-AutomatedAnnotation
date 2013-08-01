@@ -47,6 +47,7 @@ sub BUILD {
     $self->cpus($cpus)                       if ( defined($cpus) );
     $self->output_filename($output_filename) if ( defined($output_filename) );
     $self->use_lsf(1)                        if ( defined($use_lsf) );
+
 }
 
 sub run {
@@ -78,8 +79,7 @@ sub usage_text {
     # Run on a single host with 10 instances - it needs 20 CPUs and 20GB of RAM to be reserved
     $script_name -a proteins.faa -p 10
     
-    # Split up over multiple hosts using LSF
-    # p*20 = max number of jobs to submit at once, so '-p 1' = 20 jobs, '-p 10' = 200 jobs
+    # Split up over multiple hosts using LSF where '-p' is the max number of jobs at any given time
     $script_name -a proteins.faa --use_lsf -p 10
 
     # This help message

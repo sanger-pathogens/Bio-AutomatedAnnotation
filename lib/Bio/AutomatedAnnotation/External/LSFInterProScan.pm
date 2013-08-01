@@ -21,7 +21,7 @@ use LSF::JobManager;
 use Bio::AutomatedAnnotation::Exceptions;
 
 has 'input_files'     => ( is => 'ro', isa => 'ArrayRef',        required => 1 );
-has 'memory_in_mb'    => ( is => 'ro', isa => 'Int',             default  => 3000 );
+has 'memory_in_mb'    => ( is => 'ro', isa => 'Int',             default  => 2500 );
 has 'queue'           => ( is => 'ro', isa => 'Str',             default  => 'normal' );
 has '_job_manager'    => ( is => 'ro', isa => 'LSF::JobManager', lazy     => 1, builder => '_build__job_manager' );
 
@@ -39,7 +39,7 @@ sub _build__job_manager {
 
 sub _generate_memory_parameter {
     my ($self) = @_;
-    return "select[mem > ".$self->memory_in_mb."] rusage[mem=".$self->memory_in_mb." span[hosts=1] ]";
+    return "select[mem > ".$self->memory_in_mb."] rusage[mem=".$self->memory_in_mb."] span[hosts=1]";
 }
 
 sub _submit_job {
@@ -49,7 +49,7 @@ sub _submit_job {
         -e => "out.e",
         -M => $self->memory_in_mb,
         -R => $self->_generate_memory_parameter,
-        -n => $self->_cpus_per_command
+        -n => $self->_cpus_per_command,
         $command_to_run
     );
 }
@@ -86,7 +86,7 @@ sub run {
     my ($self) = @_;
 
     for my $input_file ( @{ $self->input_files } ) {
-        $self->_submit_job($self->_construct_cmd(input_file));
+        $self->_submit_job($self->_construct_cmd($input_file));
     }
     $self->_job_manager->wait_all_children( history => 1 );
     $self->_report_errors;
