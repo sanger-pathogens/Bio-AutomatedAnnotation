@@ -20,19 +20,22 @@ use File::Copy;
 use Bio::SeqIO;
 use Bio::AutomatedAnnotation::External::ParallelInterProScan;
 use Bio::AutomatedAnnotation::ParseInterProOutput;
+use Bio::AutomatedAnnotation::External::LSFInterProScan;
 
 has 'input_file'             => ( is => 'ro', isa => 'Str', required => 1 );
 has 'cpus'                   => ( is => 'ro', isa => 'Int', default  => 1 );
 has 'exec'                   => ( is => 'ro', isa => 'Str', required => 1 );
 has 'output_filename'        => ( is => 'ro', isa => 'Str', default  => 'iprscan_results.gff' );
 has '_protein_file_suffix'   => ( is => 'ro', isa => 'Str', default  => '.seq' );
-has '_tmp_directory'         => ( is => 'rw', isa => 'Str', default  => '/tmp' );
-has '_protein_files_per_cpu' => ( is => 'rw', isa => 'Int', default  => 10 );
-has '_proteins_per_file'     => ( is => 'rw', isa => 'Int', default  => 20 );
+has '_tmp_directory'         => ( is => 'ro', isa => 'Str', default  => '/tmp' );
+has '_protein_files_per_cpu' => ( is => 'ro', isa => 'Int', default  => 20 );
+has '_proteins_per_file'     => ( is => 'ro', isa => 'Int', default  => 20 );
 has '_temp_directory_obj' =>
   ( is => 'ro', isa => 'File::Temp::Dir', lazy => 1, builder => '_build__temp_directory_obj' );
 has '_temp_directory_name' => ( is => 'ro', isa => 'Str', lazy => 1, builder => '_build__temp_directory_name' );
 has '_input_file_parser' => ( is => 'ro', lazy => 1, builder => '_build__input_file_parser' );
+
+has 'use_lsf' => ( is => 'ro', isa => 'Bool', default => 0 );
 
 sub _build__temp_directory_obj {
     my ($self) = @_;
@@ -56,7 +59,7 @@ sub _build__input_file_parser {
 sub _create_protein_file {
     my ( $self, $seq_io_protein, $counter ) = @_;
     my $output_filename = $self->_temp_directory_name . '/' . $counter . $self->_protein_file_suffix;
-    my $fout = Bio::SeqIO->new( -file => ">>" . $output_filename, -format => 'Fasta', -alphabet => 'protein' );
+    my $fout         = Bio::SeqIO->new( -file => ">>" . $output_filename, -format => 'Fasta', -alphabet => 'protein' );
     my $raw_sequence = $seq_io_protein->seq;
     $raw_sequence =~ s/\*//;
     $seq_io_protein->seq($raw_sequence);
@@ -69,10 +72,10 @@ sub _create_a_number_of_protein_files {
     my %file_names;
     my $counter = 0;
     while ( my $seq = $self->_input_file_parser->next_seq ) {
-        $file_names{$self->_create_protein_file( $seq, int($counter/$self->_proteins_per_file) ) } ++;
-        
+        $file_names{ $self->_create_protein_file( $seq, int( $counter / $self->_proteins_per_file ) ) }++;
+
         $counter++;
-        last if ( $self->_protein_files_per_cpu*$self->cpus*$self->_proteins_per_file == $counter );
+        last if ( $self->_protein_files_per_cpu * $self->cpus * $self->_proteins_per_file == $counter );
     }
     my @uniq_files = sort keys %file_names;
     return \@uniq_files;
@@ -102,12 +105,25 @@ sub annotate {
 
     while ( my $protein_files = $self->_create_a_number_of_protein_files( $self->cpus ) ) {
         last if ( @{$protein_files} == 0 );
-        my $obj = Bio::AutomatedAnnotation::External::ParallelInterProScan->new(
-            input_files_path => join( '/', ( $self->_temp_directory_name, '*' . $self->_protein_file_suffix ) ),
-            exec             => $self->exec,
-            cpus             => $self->cpus,
-        );
-        $obj->run;
+
+        my $job_runner;
+        if ( $self->use_lsf ) {
+
+            # split over multiple hosts with LSF
+            $job_runner = Bio::AutomatedAnnotation::External::LSFInterProScan->new(
+                input_files => $protein_files,
+                exec        => $self->exec,
+            );
+        }
+        else {
+            # Run on a single host with parallel
+            $job_runner = Bio::AutomatedAnnotation::External::ParallelInterProScan->new(
+                input_files_path => join( '/', ( $self->_temp_directory_name, '*' . $self->_protein_file_suffix ) ),
+                exec             => $self->exec,
+                cpus             => $self->cpus,
+            );
+        }
+        $job_runner->run;
 
         # delete intermediate input files where there is 1 protein per file
         $self->_delete_list_of_files($protein_files);
@@ -122,25 +138,26 @@ sub annotate {
         $self->_delete_list_of_files($output_files);
         $self->_merge_block_results_with_final($intermediate_results_filename);
     }
-    
-    $self->_merge_proteins_into_gff($self->input_file, $self->output_filename);
-    
+
+    $self->_merge_proteins_into_gff( $self->input_file, $self->output_filename );
+
     return $self;
 }
 
-sub _merge_proteins_into_gff
-{
-  my ( $self, $input_file, $output_file) = @_;
-  open(my $output_fh, '>>', $output_file) or Bio::AutomatedAnnotation::Exceptions::CouldntWriteToFile->throw( error => "Couldnt write to file: " . $output_file );
-  open(my $input_fh, $input_file) or Bio::AutomatedAnnotation::Exceptions::FileNotFound->throw( error => "Couldnt open file: " . $input_file );
-  
-  print {$output_fh} "##FASTA\n";
-  while(<$input_fh>)
-  {
-    print {$output_fh} $_;
-  }
-  close($output_fh);
-  close($input_fh);
+sub _merge_proteins_into_gff {
+    my ( $self, $input_file, $output_file ) = @_;
+    open( my $output_fh, '>>', $output_file )
+      or Bio::AutomatedAnnotation::Exceptions::CouldntWriteToFile->throw(
+        error => "Couldnt write to file: " . $output_file );
+    open( my $input_fh, $input_file )
+      or Bio::AutomatedAnnotation::Exceptions::FileNotFound->throw( error => "Couldnt open file: " . $input_file );
+
+    print {$output_fh} "##FASTA\n";
+    while (<$input_fh>) {
+        print {$output_fh} $_;
+    }
+    close($output_fh);
+    close($input_fh);
 }
 
 sub _merge_block_results_with_final {
