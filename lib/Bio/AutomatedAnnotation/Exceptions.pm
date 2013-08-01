@@ -11,6 +11,7 @@ Exceptions for input data
 use Exception::Class (
     Bio::AutomatedAnnotation::Exceptions::FileNotFound   => { description => 'Couldnt open the file' },
     Bio::AutomatedAnnotation::Exceptions::CouldntWriteToFile   => { description => 'Couldnt open the file for writing' },
+    Bio::AutomatedAnnotation::Exceptions::LSFJobFailed   => { description => 'Jobs failed' },
 );  
 
 1;
