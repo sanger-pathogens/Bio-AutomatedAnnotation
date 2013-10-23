@@ -82,15 +82,32 @@ sub usage_text {
 
       return <<USAGE;
     Usage: $script_name [options]
-    Annotate bacteria
+    Annotate bacteria with Prokka
     
-    $script_name -a contigs.fa --dbdir /path/to/dbs  --sample_name Sample123
+    # Annotate a bacteria with a genus specific database (recommended usage)
+    $script_name -a contigs.fa  --sample_name Sample123  --genus Klebsiella
     
-    # Viruses
-    $script_name -a contigs.fa --dbdir /path/to/dbs  --sample_name Sample123 --kingdom Viruses
+    # Annotate a bacteria without a genus specific database
+    $script_name -a contigs.fa  --sample_name Sample123
+
+    # Annotate a virus - unvalidated
+    $script_name -a contigs.fa  --sample_name Sample123  --kingdom Viruses
     
     # This help message
     annotate_bacteria -h
+    
+    This software uses Prokka by Torsten Seemann
+    http://bioinformatics.net.au/prokka-manual.html
+    
+    The databases are searched in the following order:
+    
+      Genus specific RefSeq databases (optional)
+      UniprotKB - bacteria/viruses only
+      Clusters 
+      Conserved domain database
+      tigrfams
+      pfam (A)
+      rfam
 
 USAGE
 }
