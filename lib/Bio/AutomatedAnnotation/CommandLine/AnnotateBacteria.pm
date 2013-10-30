@@ -25,11 +25,12 @@ has 'sequencing_centre' => ( is => 'rw', isa => 'Str', default  => 'SC' );
 has 'accession_number'  => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'genus'             => ( is => 'rw', isa => 'Str' );
 has 'kingdom'           => ( is => 'rw', isa => 'Str', default  => 'Bacteria' );
+has 'cpus'              => ( is => 'rw', isa => 'Int', default  => 1);
 
 sub BUILD {
     my ($self) = @_;
 
-    my ( $sample_name, $kingdom, $dbdir, $assembly_file, $annotation_tool, $tmp_directory, $sequencing_centre, $accession_number,$genus,
+    my ( $sample_name, $kingdom, $dbdir, $assembly_file, $annotation_tool, $tmp_directory, $sequencing_centre, $accession_number,$genus, $cpus,
         $help );
 
     GetOptionsFromArray(
@@ -42,6 +43,7 @@ sub BUILD {
         'c|sequencing_centre=s' => \$sequencing_centre,
         'g|genus=s'             => \$genus,
         'k|kingdom=s'           => \$kingdom,
+        'i|cpus=s'              => \$cpus,
         'n|accession_number=s'  => \$accession_number,
         'h|help'                => \$help,
     );
@@ -55,6 +57,7 @@ sub BUILD {
     $self->accession_number($accession_number)   if ( defined($accession_number) );
     $self->genus($genus)                         if ( defined($genus) );
     $self->kingdom($kingdom)                     if ( defined($kingdom) );
+    $self->cpus($cpus)                           if ( defined($cpus) );
 
 }
 
@@ -70,7 +73,8 @@ sub run {
           dbdir            => $self->dbdir,
           tmp_directory    => $self->tmp_directory,
           genus            => $self->genus,
-          kingdom          => $self->kingdom
+          kingdom          => $self->kingdom,
+          cpus             => $self->cpus
     );
     $obj->annotate;
 
@@ -89,6 +93,9 @@ sub usage_text {
     
     # Annotate a bacteria without a genus specific database
     $script_name -a contigs.fa  --sample_name Sample123
+    
+    # Use multiple processors (faster)
+    $script_name -a contigs.fa  --sample_name Sample123 --cpus 10
 
     # Annotate a virus - unvalidated
     $script_name -a contigs.fa  --sample_name Sample123  --kingdom Viruses
