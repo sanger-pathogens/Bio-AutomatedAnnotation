@@ -655,7 +655,8 @@ sub annotate {
               {
                 DB  => "$dbdir/hmm/$name.hmm",
                 SRC => "protein motif:$name:",
-                FMT => 'hmmer3',
+                FMT => 'hmmer',
+                VERSION => 3,
                 CMD => $HMMER3CMD,
               };
         }
@@ -740,7 +741,7 @@ sub annotate {
 
                     for ( my $j = $slice_size * $i ; $j < @cds_counter && $j < $slice_size * ( $i + 1 ) ; $j++ ) {
                         my $pid = $cds_counter[$j];
-                        my $bls = Bio::SearchIO->new( -file => "$tempdir/$pid.seq.out", -format => $db->{FMT} );
+                        my $bls = Bio::SearchIO->new( -file => "$tempdir/$pid.seq.out", -format => $db->{FMT}, -version => $db->{VERSION} );
                         my $res = $bls->next_result or next;
                         my $hit = $res->next_hit or next;
                         my ( $prod, $gene, $EC ) = ( $hit->description, '', '' );
