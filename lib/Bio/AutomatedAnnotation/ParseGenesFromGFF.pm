@@ -21,8 +21,6 @@ use Bio::PrimarySeq;
 use Bio::SeqIO;
 use Bio::Perl;
 
-use Data::Dumper;
-
 has 'gff_file'     => ( is => 'ro', isa => 'Str', required => 1 );
 has 'search_query' => ( is => 'ro', isa => 'Str', required => 1 );
 
