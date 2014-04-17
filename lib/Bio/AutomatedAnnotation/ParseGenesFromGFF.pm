@@ -21,6 +21,8 @@ use Bio::PrimarySeq;
 use Bio::SeqIO;
 use Bio::Perl;
 
+use Data::Dumper;
+
 has 'gff_file'     => ( is => 'ro', isa => 'Str', required => 1 );
 has 'search_query' => ( is => 'ro', isa => 'Str', required => 1 );
 
@@ -59,13 +61,18 @@ sub _build__matching_features {
         for my $tag_name (@tag_names) {
             if ( $raw_feature->has_tag($tag_name) ) {
                 my @tag_values = $raw_feature->get_tag_values($tag_name);
-
-                for my $tag_value (@tag_values) {
-                    if ( $tag_value =~ /$search_query/ ) {
-                        push( @matching_features, $raw_feature );
-                        last;
-                    }
+                my $values = join(',', @tag_values);
+                if ( $values =~ /$search_query/ ){
+                  push( @matching_features, $raw_feature );
+                  last;
                 }
+
+                #for my $tag_value (@tag_values) {
+                #    if ( $tag_value =~ /$search_query/ ) {
+                #        push( @matching_features, $raw_feature );
+                #        last;
+                #    }
+                #}
             }
             last if ( @matching_features > 0 && $raw_feature eq $matching_features[-1] );
         }
