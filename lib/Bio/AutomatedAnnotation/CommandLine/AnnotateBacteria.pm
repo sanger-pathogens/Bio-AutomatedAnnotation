@@ -26,11 +26,12 @@ has 'accession_number'  => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'genus'             => ( is => 'rw', isa => 'Str' );
 has 'kingdom'           => ( is => 'rw', isa => 'Str', default  => 'Bacteria' );
 has 'cpus'              => ( is => 'rw', isa => 'Int', default  => 1);
+has 'gcode'             => ( is => 'ro', isa => 'Int', default  => 11 );
 
 sub BUILD {
     my ($self) = @_;
 
-    my ( $sample_name, $kingdom, $dbdir, $assembly_file, $annotation_tool, $tmp_directory, $sequencing_centre, $accession_number,$genus, $cpus,
+    my ( $sample_name, $kingdom, $dbdir, $assembly_file, $annotation_tool, $tmp_directory, $sequencing_centre, $accession_number,$genus, $cpus, $gcode,
         $help );
 
     GetOptionsFromArray(
@@ -46,6 +47,7 @@ sub BUILD {
         'i|cpus=s'              => \$cpus,
         'n|accession_number=s'  => \$accession_number,
         'h|help'                => \$help,
+        'gcode=i'               => \$gcode,
     );
 
     $self->sample_name($sample_name)             if ( defined($sample_name) );
@@ -58,7 +60,7 @@ sub BUILD {
     $self->genus($genus)                         if ( defined($genus) );
     $self->kingdom($kingdom)                     if ( defined($kingdom) );
     $self->cpus($cpus)                           if ( defined($cpus) );
-
+    $self->gcode($gcode)                         if ( defined($gcode) );
 }
 
 sub run {
@@ -74,7 +76,8 @@ sub run {
           tmp_directory    => $self->tmp_directory,
           genus            => $self->genus,
           kingdom          => $self->kingdom,
-          cpus             => $self->cpus
+          cpus             => $self->cpus,
+          gcode            => $self->gcode,
     );
     $obj->annotate;
 
@@ -96,6 +99,9 @@ sub usage_text {
     
     # Use multiple processors (faster)
     $script_name -a contigs.fa  --sample_name Sample123 --cpus 10
+
+    # Use a different translation table (defaults to 11)
+    $script_name -a contigs.fa  --sample_name Sample123 --gcode 4
 
     # Annotate a virus - unvalidated
     $script_name -a contigs.fa  --sample_name Sample123  --kingdom Viruses
