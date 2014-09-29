@@ -91,6 +91,8 @@ sub usage_text {
     Usage: $script_name [options]
     Annotate bacteria with Prokka
     
+    Seemann T. Prokka: rapid prokaryotic genome annotation. Bioinformatics. 2014 Jul 15;30(14):2068-9. PMID:24642063
+    
     # Annotate a bacteria with a genus specific database (recommended usage)
     $script_name -a contigs.fa  --sample_name Sample123  --genus Klebsiella
     
