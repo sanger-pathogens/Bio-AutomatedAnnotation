@@ -81,7 +81,7 @@ sub run {
           kingdom          => $self->kingdom,
           cpus             => $self->cpus,
           gcode            => $self->gcode,
-          keep_original_order_and_names => keep_original_order_and_names,
+          keep_original_order_and_names => $self->keep_original_order_and_names,
     );
     $obj->annotate;
 
