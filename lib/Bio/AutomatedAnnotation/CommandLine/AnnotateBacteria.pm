@@ -26,13 +26,14 @@ has 'accession_number'  => ( is => 'rw', isa => 'Maybe[Str]' );
 has 'genus'             => ( is => 'rw', isa => 'Str' );
 has 'kingdom'           => ( is => 'rw', isa => 'Str', default  => 'Bacteria' );
 has 'cpus'              => ( is => 'rw', isa => 'Int', default  => 1);
-has 'gcode'             => ( is => 'ro', isa => 'Int', default  => 11 );
+has 'gcode'             => ( is => 'rw', isa => 'Int', default  => 11 );
+has 'keep_original_order_and_names' => ( is => 'rw', isa => 'Bool', default => 0 );
 
 sub BUILD {
     my ($self) = @_;
 
     my ( $sample_name, $kingdom, $dbdir, $assembly_file, $annotation_tool, $tmp_directory, $sequencing_centre, $accession_number,$genus, $cpus, $gcode,
-        $help );
+        $help, $keep_original_order_and_names );
 
     GetOptionsFromArray(
         $self->args,
@@ -48,6 +49,7 @@ sub BUILD {
         'n|accession_number=s'  => \$accession_number,
         'h|help'                => \$help,
         'gcode=i'               => \$gcode,
+        'keep_original_order_and_names' => \$keep_original_order_and_names,
     );
 
     $self->sample_name($sample_name)             if ( defined($sample_name) );
@@ -61,6 +63,7 @@ sub BUILD {
     $self->kingdom($kingdom)                     if ( defined($kingdom) );
     $self->cpus($cpus)                           if ( defined($cpus) );
     $self->gcode($gcode)                         if ( defined($gcode) );
+    $self->keep_original_order_and_names($keep_original_order_and_names) if ( defined($keep_original_order_and_names) );
 }
 
 sub run {
@@ -78,6 +81,7 @@ sub run {
           kingdom          => $self->kingdom,
           cpus             => $self->cpus,
           gcode            => $self->gcode,
+          keep_original_order_and_names => keep_original_order_and_names,
     );
     $obj->annotate;
 
@@ -94,19 +98,22 @@ sub usage_text {
     Seemann T. Prokka: rapid prokaryotic genome annotation. Bioinformatics. 2014 Jul 15;30(14):2068-9. PMID:24642063
     
     # Annotate a bacteria with a genus specific database (recommended usage)
-    $script_name -a contigs.fa  --sample_name Sample123  --genus Klebsiella
+    $script_name -a contigs.fa --sample_name Sample123  --genus Klebsiella
     
     # Annotate a bacteria without a genus specific database
-    $script_name -a contigs.fa  --sample_name Sample123
+    $script_name -a contigs.fa --sample_name Sample123
     
     # Use multiple processors (faster)
-    $script_name -a contigs.fa  --sample_name Sample123 --cpus 10
+    $script_name -a contigs.fa --sample_name Sample123 --cpus 10
 
     # Use a different translation table (defaults to 11)
-    $script_name -a contigs.fa  --sample_name Sample123 --gcode 4
+    $script_name -a contigs.fa --sample_name Sample123 --gcode 1
 
-    # Annotate a virus - unvalidated
-    $script_name -a contigs.fa  --sample_name Sample123  --kingdom Viruses
+    # Annotate a virus
+    $script_name -a contigs.fa --sample_name Sample123 --kingdom Viruses
+    
+    # Keep original order and names of sequences from input assembly
+    $script_name -a contigs.fa --sample_name Sample123 --keep_original_order_and_names
     
     # This help message
     annotate_bacteria -h

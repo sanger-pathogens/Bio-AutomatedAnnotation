@@ -76,6 +76,7 @@ has 'rfam'            => ( is => 'ro', isa => 'Bool', default => 0 );
 has 'files_per_chunk' => ( is => 'ro', isa => 'Int',  default => 100 );
 has 'tempdir'         => ( is => 'ro', isa => 'Str',  default => '/tmp' );
 has 'cleanup_prod'    => ( is => 'ro', isa => 'Bool', default => 1 );
+has 'keep_original_order_and_names' => ( is => 'ro', isa => 'Bool', default => 0 );
 
 has 'exe'     => ( is => 'ro', isa => 'Str', default => 'PROKKA' );
 has 'version' => ( is => 'ro', isa => 'Str', default => '1.5' );
@@ -305,11 +306,19 @@ sub annotate {
             next;
         }
         $ncontig++;
-
+        my $id;
         # http://www.ncbi.nlm.nih.gov/genomes/static/Annotation_pipeline_README.txt
-        my $id = sprintf "contig%06d", $ncontig;
-        $id = "$contig_uniq_id|$centre|$id" if $centre;
-        $seq->display_id($id);
+        if($self->keep_original_order_and_names)
+        {
+            $id = $seq->display_id;
+        }
+        else
+        {
+            $id = sprintf "contig%06d", $ncontig;
+            $id = "$contig_uniq_id|$centre|$id" if $centre;
+            $seq->display_id($id);
+        }
+        
         my $s = $seq->seq;
         $s = uc($s);
         $s =~ s/[^ACTG]/N/g;
@@ -317,6 +326,7 @@ sub annotate {
         $seq->desc(undef);
         $fout->write_seq($seq);
         $seq{$id}{DNA} = $seq;
+        $seq{$id}{order} = $ncontig;
     }
     $self->msg("Wrote $ncontig contigs");
 
@@ -930,8 +940,18 @@ sub annotate {
     if ( scalar keys %seq ) {
         print $gff_fh "##FASTA\n";
         my $seqio = Bio::SeqIO->new( -fh => $gff_fh, -format => 'fasta' );
-        for my $sid ( sort keys %seq ) {
-            $seqio->write_seq( $seq{$sid}{DNA} );
+        
+        if($self->keep_original_order_and_names)
+        {
+          for my $sid ( sort {$seq{$a}{order} <=> $seq{$b}{order} } keys %seq ) {
+              $seqio->write_seq( $seq{$sid}{DNA} );
+          }
+        }
+        else
+        {
+          for my $sid ( sort keys %seq ) {
+              $seqio->write_seq( $seq{$sid}{DNA} );
+          }
         }
     }
 
