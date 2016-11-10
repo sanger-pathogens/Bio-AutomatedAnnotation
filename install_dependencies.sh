@@ -15,7 +15,7 @@ PRODIGAL_URL="https://github.com/hyattpd/Prodigal/releases/download/v${PRODIGAL_
 
 HMMER_VERSION="3.1b2"
 HMMER_DOWNLOAD_FILENAME="hmmer-${HMMER_VERSION}.tar.gz"
-HMMER_URL="http://selab.janelia.org/software/hmmer3/${HMMER_VERSION}/hmmer-${HMMER_VERSION}-linux-intel-x86_64.tar.gz"
+HMMER_URL="http://eddylab.org/software/hmmer3/${HMMER_VERSION}/hmmer-${HMMER_VERSION}-linux-intel-x86_64.tar.gz"
 
 # Make an install location
 if [ ! -d 'build' ]; then
