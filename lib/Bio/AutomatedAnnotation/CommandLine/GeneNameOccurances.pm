@@ -67,7 +67,7 @@ sub run {
     if ( defined( $self->output_filename ) ) {
         $input_params{output_filename} = $self->output_filename;
     }
-    
+
     my $spreadsheet_obj = Bio::AutomatedAnnotation::SpreadsheetOfGeneOccurances->new(\%input_params);
     $spreadsheet_obj->create_spreadsheet;
     

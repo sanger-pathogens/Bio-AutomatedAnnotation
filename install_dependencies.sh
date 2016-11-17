@@ -128,7 +128,7 @@ update_path ${HMMER_BIN_DIR}
 cd $start_dir
 cpanm Dist::Zilla
 dzil authordeps --missing | cpanm
-cpanm File::Slurp \
+cpanm File::Slurper \
       Bio::SearchIO \
       Text::CSV \
       XML::Simple

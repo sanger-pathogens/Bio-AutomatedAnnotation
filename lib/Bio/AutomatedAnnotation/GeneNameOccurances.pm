@@ -35,7 +35,7 @@ sub _build_sorted_all_gene_names
   my ($self) = @_;
   my %all_gene_names = %{$self->all_gene_names};
   
-  my @sorted_gene_names = sort { $all_gene_names{$b} <=> $all_gene_names{$a} } keys %all_gene_names;
+  my @sorted_gene_names = sort { $b cmp $a } keys %all_gene_names;
   return \@sorted_gene_names;
 }
 
