@@ -17,7 +17,7 @@ has 'script_name' => ( is => 'ro', isa => 'Str',      required => 1 );
 has 'help'        => ( is => 'rw', isa => 'Bool',     default  => 0 );
 
 has 'sample_name'       => ( is => 'rw', isa => 'Str'  );
-has 'dbdir'             => ( is => 'rw', isa => 'Str', default => '/lustre/scratch118/pathogen/pathpipe/prokka'  );
+has 'dbdir'             => ( is => 'rw', isa => 'Str', default => '/lustre/scratch118/infgen/pathogen/pathpipe/prokka'  );
 has 'assembly_file'     => ( is => 'rw', isa => 'Str'  );
 has 'annotation_tool'   => ( is => 'rw', isa => 'Str', default  => 'Prokka' );
 has 'tmp_directory'     => ( is => 'rw', isa => 'Str', default  => '/tmp' );
