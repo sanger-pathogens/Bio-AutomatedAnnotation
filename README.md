@@ -3,13 +3,17 @@ Perl module to take in an genomic assembly and produce annoation
 
 [![Build Status](https://travis-ci.org/sanger-pathogens/Bio-AutomatedAnnotation.svg?branch=master)](https://travis-ci.org/sanger-pathogens/Bio-AutomatedAnnotation)  
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](https://github.com/sanger-pathogens/Bio-AutomatedAnnotation/blob/master/GPL-LICENSE)   
-[![status](https://img.shields.io/badge/MGEN-10.1099%2Fmgen.0.000083-brightgreen.svg)](http://mgen.microbiologyresearch.org/content/journal/mgen/10.1099/mgen.0.000083)
+[![status](https://img.shields.io/badge/MGEN-10.1099%2Fmgen.0.000083-brightgreen.svg)](http://mgen.microbiologyresearch.org/content/journal/mgen/10.1099/mgen.0.000083)   
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat-square)](http://bioconda.github.io/recipes/perl-bio-automatedannotation/README.html)   
+[![Container ready](https://img.shields.io/badge/container-ready-brightgreen.svg)](https://quay.io/repository/biocontainers/perl-bio-automatedannotation)  
+
 
 ## Contents
   * [Introduction](#introduction)
   * [Installation](#installation)
     * [Required dependencies](#required-dependencies)
     * [From CPAN](#from-cpan)
+    * [From Bioconda](#from-bioconda)
     * [From source](#from-source)
     * [Running the tests](#running-the-tests)
   * [Usage](#usage)
@@ -32,7 +36,7 @@ Bio-AutomatedAnnotation has the following dependencies:
 There are a number of ways to install Bio-AutomatedAnnotation and details are provided below. If you encounter an issue when installing Bio-AutomatedAnnotation please contact your local system administrator. If you encounter a bug please log it [here](https://github.com/sanger-pathogens/Bio-AutomatedAnnotation/issues) or email us at path-help@sanger.ac.uk.
 
 ### From CPAN
-Install capnminus:   
+Install [cpanminus](https://github.com/miyagawa/cpanminus):   
   
 `apt-get install cpanminus`   
   
@@ -40,12 +44,21 @@ Then install Bio::AutomatedAnnotation:
   
 `cpanm Bio::AutomatedAnnotation`   
    
+### From Bioconda
+Install conda. Then install bioconda and perl-bio-automatedannotation:
+```
+conda config --add channels r
+conda config --add channels defaults
+conda config --add channels conda-forge
+conda config --add channels bioconda
+conda install perl-bio-automatedannotation
+```
 ### From source
 Clone the repository:   
    
 `git clone https://github.com/sanger-pathogens/Bio-AutomatedAnnotation.git`   
    
-Move into the directory and install all dependencies using DistZilla:   
+Move into the directory and install all dependencies using [DistZilla](http://dzil.org/):   
   
 ```
 cd Bio-AutomatedAnnotation
