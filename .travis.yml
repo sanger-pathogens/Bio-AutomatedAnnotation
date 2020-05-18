@@ -16,6 +16,7 @@ addons:
     - libz-dev
     - ncbi-blast+
     - g++
+    - libdb-dev
 cache:
   directories:
   - perl_modules
