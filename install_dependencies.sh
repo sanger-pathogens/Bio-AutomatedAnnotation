@@ -119,6 +119,9 @@ update_path $PRODIGAL_DIR
 HMMER_BIN_DIR="${HMMER_BUILD_DIR}/binaries"
 update_path ${HMMER_BIN_DIR}
 
+echo Checking hmmer in path: $(which hmmer)
+echo Checking hmmer bin dir: ${HMMER_BIN_DIR}
+ls ${HMMER_BIN_DIR}
 cd $start_dir
 
 set +eu
