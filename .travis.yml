@@ -25,7 +25,6 @@ before_install:
 - cpanm local::lib
 - eval "$(perl -Mlocal::lib=${PWD}/perl_modules)"
 - cpanm --notest Dist::Zilla
-
 install:
 - "source ./install_dependencies.sh"
 - dzil authordeps --missing | cpanm --notest
