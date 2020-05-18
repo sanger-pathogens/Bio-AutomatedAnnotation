@@ -24,12 +24,6 @@ fi
 cd build
 build_dir=$(pwd)
 
-# Install apt packages
-sudo apt-get update -q
-sudo apt-get install -y -q g++ \
-	                   libexpat1-dev \
-                           ncbi-blast+
-
 download () {
   download_url=$1
   download_path=$2
@@ -126,7 +120,6 @@ HMMER_BIN_DIR="${HMMER_BUILD_DIR}/binaries"
 update_path ${HMMER_BIN_DIR}
 
 cd $start_dir
-cpanm Dist::Zilla
 dzil authordeps --missing | cpanm
 cpanm File::Slurper \
       Bio::SearchIO \

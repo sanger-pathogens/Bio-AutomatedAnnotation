@@ -1,7 +1,28 @@
+dist: bionic
 language: perl
+os: linux
 perl:
-  - "5.14"
-sudo: true
+  - "5.30"
+addons:
+  apt:
+    packages:
+    - git
+    - wget
+    - file
+    - build-essential
+    - libssl-dev
+    - libexpat1-dev
+    - cpanminus
+    - libz-dev
+    - ncbi-blast+
+    - g++
+cache:
+  directories:
+  - perl_modules
+before_install:
+- cpanm local::lib
+- eval "$(perl -Mlocal::lib=${PWD}/perl_modules)"
+- cpanm --notest Dist::Zilla
 install:
   - "source ./install_dependencies.sh"
 script: "dzil test"
