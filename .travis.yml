@@ -1,6 +1,7 @@
 dist: bionic
 language: perl
 os: linux
+if: tag IS blank AND env(GITHUB_OAUTH_TOKEN) IS present AND type IN (push, pull_request)
 perl:
   - "5.30"
 addons:
@@ -24,6 +25,10 @@ before_install:
 - cpanm local::lib
 - eval "$(perl -Mlocal::lib=${PWD}/perl_modules)"
 - cpanm --notest Dist::Zilla
+
 install:
-  - "source ./install_dependencies.sh"
-script: "dzil test"
+- "source ./install_dependencies.sh"
+- dzil authordeps --missing | cpanm
+- cpanm --notest File::Slurper Bio::SearchIO Text::CSV XML::Simple
+script: 
+- dzil test

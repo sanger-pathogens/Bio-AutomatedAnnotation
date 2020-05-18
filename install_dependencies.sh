@@ -120,13 +120,6 @@ HMMER_BIN_DIR="${HMMER_BUILD_DIR}/binaries"
 update_path ${HMMER_BIN_DIR}
 
 cd $start_dir
-dzil authordeps --missing | cpanm
-cpanm File::Slurper \
-      Bio::SearchIO \
-      Text::CSV \
-      XML::Simple
-
-cd $start_dir
 
 set +eu
 set +x
