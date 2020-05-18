@@ -28,7 +28,8 @@ before_install:
 
 install:
 - "source ./install_dependencies.sh"
-- dzil authordeps --missing | cpanm
+- dzil authordeps --missing | cpanm --notest
+- dzil listdeps --missing | cpanm --notest
 - cpanm --notest File::Slurper Bio::SearchIO Text::CSV XML::Simple
 script: 
 - dzil test
