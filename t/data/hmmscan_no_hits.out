@@ -4,7 +4,7 @@
 # Freely distributed under the GNU General Public License (GPLv3).
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # query sequence file:             /tmp/YCMOqrwDoY/10.seq
-# target HMM database:             /lustre/scratch118/infgen/pathogen/pathpipe/prokka/hmm/CLUSTERS.hmm
+# target HMM database:             /data/pam/software/prokka/hmm/CLUSTERS.hmm
 # output directed to file:         /tmp/YCMOqrwDoY/10.seq.out
 # prefer accessions over names:    yes
 # show alignments in output:       no
